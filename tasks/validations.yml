@@ -1,0 +1,270 @@
+---
+# Using fail or assert module removes the host from inventory on a task failure
+# We don't really want to do that, as we want to discover all problems at same time
+# If KVM host fails a task and is removed from inventory, then we can't run subsequent tests for guests
+# Thus we abort the play entirely straight away if KVM host is unreachable
+# Otherwise, we don't abort but instead set a variable when anything fails
+# We then print out any errors and end the play after the checks have completed
+# This means we can perform all checks for all hosts so you know all things you need to fix
+
+- name: Run all the validations
+  block:
+    # Either run with no limit (all) or specify limit with 'kvmhost' and guests
+    # This will fail here if we have no 'kvmhost' else we can't perform other tests
+    - name: "Abort play when 'kvmhost' not specified in limits"
+      assert:
+        that:
+          - '"kvmhost" in ansible_limit'
+        fail_msg: "Specify 'kvmhost' and VMs with --limit option, e.g. --limit kvmhost,guests"
+        quiet: true
+      when:
+        - ansible_limit is defined
+      delegate_to: "{{ groups['kvmhost'][0] }}"
+      run_once: true
+
+    ## KVM host
+    - name: "KVM host only: Get distro and network devices to validate guest configs"
+      setup:
+        gather_subset:
+          - '!all'
+          - min
+          - network
+      register: result_setup
+      when:
+        - inventory_hostname in groups['kvmhost']
+
+    - name: "Abort play if KVM host is unreachable"
+      assert:
+        that: hostvars[groups['kvmhost'][0]].result_setup.unreachable is not defined
+        fail_msg: "KVM host unreachable, please check inventory"
+        quiet: true
+      run_once: true
+
+    # Load distro specific vars here
+    - name: "KVM host only: Load distro specific vars"
+      include_vars: "{{ ansible_distribution.split(' ', 1)[0] | lower }}.yml"
+      when:
+        - inventory_hostname in groups['kvmhost']
+
+    - name: "KVM host only: Install KVM and libvirtd packages"
+      package:
+        name: "{{ virt_infra_host_pkgs_kvm }}"
+        state: present
+      become: true
+      register: result_libvirtd_install
+      retries: 30
+      delay: 5
+      until: result_libvirtd_install is succeeded
+      when:
+        - inventory_hostname in groups['kvmhost']
+      ignore_errors: true
+
+    - name: "KVM host only: Advise unable to install KVM and libvirtd packages"
+      set_fact:
+        validations_failed: "{{ validations_failed|default([]) + ['KVM host: Failed to install kvm and libvirtd packages'] }}"
+      when:
+        - inventory_hostname in groups['kvmhost']
+        - result_libvirtd_install.failed
+      changed_when: true
+
+    - name: "KVM host only: Install required packages"
+      package:
+        name: "{{ virt_infra_host_pkgs_deps }}"
+        state: present
+      become: true
+      register: result_deps_install
+      retries: 30
+      delay: 5
+      until: result_deps_install is succeeded
+      when:
+        - inventory_hostname in groups['kvmhost']
+      ignore_errors: true
+
+    - name: "KVM host only: Advise unable to install packages"
+      set_fact:
+        validations_failed: "{{ validations_failed|default([]) + ['KVM host: Failed to install deps'] }}"
+      when:
+        - inventory_hostname in groups['kvmhost']
+        - result_deps_install.failed
+      changed_when: true
+
+    - name: "KVM host only: Test for required programs"
+      shell: 'hash {{ item }} 2>/dev/null'
+      become: true
+      register: result_deps
+      with_items: "{{ virt_infra_host_deps }}"
+      when:
+        - inventory_hostname in groups['kvmhost']
+      ignore_errors: true
+      args:
+        executable: /bin/bash
+      changed_when: false
+
+    - name: "KVM host only: Ensure libvirtd is running"
+      service:
+        name: "libvirtd"
+        state: started
+        enabled: yes
+      register: result_libvirtd
+      ignore_errors: yes
+      when:
+        - inventory_hostname in groups['kvmhost']
+      become: true
+
+    - name: "KVM host only: Advise unable to start libvirtd"
+      set_fact:
+        validations_failed: "{{ validations_failed|default([]) + ['KVM host: Failed to start and enable libvirtd'] }}"
+      when:
+        - inventory_hostname in groups['kvmhost']
+        - result_libvirtd.failed
+      changed_when: true
+
+    # TODO: use this? 'virt-host-validate qemu'
+    - name: "KVM host only: Test that we can talk to libvirtd"
+      virt:
+        command: list_vms
+        uri: "{{ virt_infra_host_libvirt_url }}"
+      register: result_libvirtd
+      become: true
+      when:
+        - inventory_hostname in groups['kvmhost']
+      ignore_errors: true
+
+    - name: "KVM host only: Advise libvirtd not contactable"
+      set_fact:
+        validations_failed: "{{ validations_failed|default([]) + ['KVM host: libvirtd connection failed on KVM host'] }}"
+      when:
+        - inventory_hostname in groups['kvmhost']
+        - result_libvirtd.list_vms is not defined
+      changed_when: true
+
+    - name: Advise when deps are not installed
+      set_fact:
+        validations_failed: "{{ validations_failed|default([]) + [ 'KVM host: ' +  item.item + ' not found on KVM host, please install'] }}"
+      when:
+        - inventory_hostname in groups['kvmhost']
+        - item.rc != 0
+      changed_when: true
+      with_items: "{{ hostvars[groups['kvmhost'][0]].result_deps.results }}"
+
+    - name: "KVM host only: Get list of supported os-variants"
+      command: osinfo-query os
+      register: result_osinfo
+      when:
+        - inventory_hostname in groups['kvmhost']
+      ignore_errors: true
+      changed_when: false
+
+    - name: "KVM host only: Advise os variants not available"
+      set_fact:
+        validations_failed: "{{ validations_failed|default([]) + ['KVM host: os variants list (osinfo-query os) failed'] }}"
+      when:
+        - inventory_hostname in groups['kvmhost']
+        - result_osinfo.rc is defined
+        - result_osinfo.rc != 0
+      changed_when: true
+
+    ## Guests
+    - name: "Guests: Check that boot disk is specified"
+      set_fact:
+        validations_failed: "{{ validations_failed|default([]) + ['boot disk is not defined'] }}"
+      when:
+        - inventory_hostname not in groups['kvmhost']
+        - virt_infra_disks | selectattr('name','equalto','boot') | list | length == 0
+      changed_when: true
+
+    - name: "Guests: Check that state is valid"
+      set_fact:
+        validations_failed: "{{ validations_failed|default([]) + [ virt_infra_state + ' not a valid state, try: running, shutdown, destroyed or undefined'] }}"
+      when:
+        - inventory_hostname not in groups['kvmhost']
+        - virt_infra_state not in ['running', 'shutdown', 'destroyed', 'undefined']
+      changed_when: true
+
+    - name: "KVM host: Test for distro images"
+      stat:
+        path: "{{ hostvars[groups['kvmhost'][0]].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ virt_infra_distro_image }}"
+      register: result_base_image
+      delegate_to: "{{ groups['kvmhost'][0] }}"
+      when:
+        - inventory_hostname not in groups['kvmhost']
+
+    - name: "Guests: Check that distro disk image exists on KVM host"
+      set_fact:
+        validations_failed: "{{ validations_failed|default([]) + \
+        [ hostvars[groups['kvmhost'][0]].virt_infra_host_image_path | default(virt_infra_host_image_path) + '/' + \
+        virt_infra_distro_image + ' missing.{% if virt_infra_distro_image_url is defined and virt_infra_distro_image_url %} \
+        Download from {{ virt_infra_distro_image_url }}{% endif %}'] }}"
+      when:
+        - inventory_hostname not in groups['kvmhost']
+        - not result_base_image.stat.exists
+      changed_when: true
+
+    - name: "Guests: Check required network is to be removed"
+      set_fact:
+        validations_failed: "{{ validations_failed|default([]) + [ item.name + ' network required, but would be removed' ] }}"
+      when:
+        - inventory_hostname not in groups['kvmhost']
+        - virt_infra_state != "undefined"
+        - hostvars[groups['kvmhost'][0]].virt_infra_host_networks.absent is defined
+        - virt_infra_networks | selectattr('name','equalto', item.name) | list | length != 0
+      with_items: "{{ hostvars[groups['kvmhost'][0]].virt_infra_host_networks.absent }}"
+      changed_when: true
+
+    - name: "Guests: Check required network is present"
+      set_fact:
+        validations_failed: "{{ validations_failed|default([]) + [ item.name + ' network required, but not being created' ] }}"
+      when:
+        - inventory_hostname not in groups['kvmhost']
+        - virt_infra_state != "undefined"
+        - item.type is not defined or (item.type is defined and item.type != "bridge")
+        - hostvars[groups['kvmhost'][0]].virt_infra_host_networks.present is defined
+        - hostvars[groups['kvmhost'][0]].virt_infra_host_networks.present | selectattr('name','equalto', item.name) | list | length == 0
+      with_items: "{{ virt_infra_networks }}"
+      changed_when: true
+
+    - name: "Guests: Check if required bridge interfaces exist on KVM host"
+      set_fact:
+        validations_failed: "{{ validations_failed|default([]) + [ item.name + ' bridge interface missing on KVM host'] }}"
+      when:
+        - inventory_hostname not in groups['kvmhost']
+        - item.type is defined and item.type == "bridge"
+        - item.name not in hostvars[groups['kvmhost'][0]].ansible_interfaces
+      with_items: "{{ virt_infra_networks }}"
+      changed_when: true
+
+    - name: "Guests: Check that network model is valid"
+      set_fact:
+        validations_failed: "{{ validations_failed|default([]) + [ item.model + ' network model not valid, try: virtio, e1000, rtl8139' ] }}"
+      when:
+        - inventory_hostname not in groups['kvmhost']
+        - item.model is defined and item.model not in ['virtio', 'e1000', 'rtl8139']
+      with_items: "{{ virt_infra_networks }}"
+      changed_when: true
+
+    - name: "Guests: Check that os-variant is supported on KVM host"
+      set_fact:
+        validations_failed: "{{ validations_failed|default([]) + [ virt_infra_variant + ' not supported by KVM host, run: sudo osinfo-query os'] }}"
+      when:
+        - inventory_hostname not in groups['kvmhost']
+        - hostvars[groups['kvmhost'][0]].result_osinfo.stdout is defined
+        - virt_infra_variant is defined
+        - virt_infra_variant not in hostvars[groups['kvmhost'][0]].result_osinfo.stdout
+      changed_when: true
+
+    # - name: "Check that disks don't already exist for guest"
+    # - name: "Fail if no SSH keys found on kvm host and not defined"
+
+    - name: Validation failures
+      debug:
+        msg: "{{ validations_failed|default('nothing') }}"
+      when:
+        - validations_failed is defined and validations_failed
+      failed_when: true
+
+  rescue:
+    - debug:
+        msg: "Play aborted, see errors above"
+      changed_when: true
+
+    - meta: end_play

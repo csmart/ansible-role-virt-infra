@@ -1,0 +1,14 @@
+<network>
+  <name>{{ item.name | default("default") }}</name>
+  <forward mode='nat'>
+    <nat>
+      <port start='1024' end='65535'/>
+    </nat>
+  </forward>
+  <mac address='{{ "52:54:00" | random_mac }}'/>
+  <ip address='{{ item.ip_address | default("192.168.122.1") }}' netmask='{{ item.subnet | default("255.255.255.0") }}'>
+    <dhcp>
+      <range start='{{ item.dhcp_start |default("192.168.122.2") }}' end='{{ item.dhcp_end |default("192.168.122.254") }}'/>
+    </dhcp>
+  </ip>
+</network>

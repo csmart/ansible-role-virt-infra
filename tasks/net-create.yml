@@ -1,0 +1,39 @@
+---
+# Only run on KVM host
+- name: Define networks
+  virt_net:
+    command: define
+    autostart: yes
+    name: "{{ item.name }}"
+    xml: '{{ lookup("template", "templates/virt-network.j2") }}'
+    uri: "{{ virt_infra_host_libvirt_url }}"
+  delegate_to: "{{ groups['kvmhost'][0] }}"
+  become: true
+  with_items: "{{ virt_infra_host_networks.present }}"
+  when:
+    - inventory_hostname in groups['kvmhost']
+    - item.name is defined
+
+- name: Start networks
+  virt_net:
+    state: active
+    name: "{{ item.name }}"
+    uri: "{{ virt_infra_host_libvirt_url }}"
+  delegate_to: "{{ groups['kvmhost'][0] }}"
+  become: true
+  with_items: "{{ virt_infra_host_networks.present }}"
+  when:
+    - inventory_hostname in groups['kvmhost']
+    - item.name is defined
+
+- name: Autostart networks
+  virt_net:
+    autostart: yes
+    name: "{{ item.name }}"
+    uri: "{{ virt_infra_host_libvirt_url }}"
+  delegate_to: "{{ groups['kvmhost'][0] }}"
+  become: true
+  with_items: "{{ virt_infra_host_networks.present }}"
+  when:
+    - inventory_hostname in groups['kvmhost']
+    - item.name is defined

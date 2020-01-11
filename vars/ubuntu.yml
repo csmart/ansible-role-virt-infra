@@ -1,0 +1,16 @@
+---
+# Ubuntu specific vars
+virt_infra_host_pkgs_kvm:
+  - libvirt-daemon-system
+  - qemu-kvm
+
+virt_infra_host_pkgs_deps:
+  - dnsmasq
+  - genisoimage
+  - libguestfs-tools
+  - libosinfo-bin
+  - libvirt-clients
+  - python3-libvirt
+  - python3-lxml
+  - qemu-utils
+  - virtinst

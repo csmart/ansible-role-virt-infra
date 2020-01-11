@@ -1,0 +1,114 @@
+---
+# Defaults for virt-infra Ansible role
+# Values which are commented out are optional
+
+## Guest related
+
+# Valid guest states are: running, shutdown, destroyed or undefined
+virt_infra_state: "running"
+
+# Guests are not autostarted on boot
+virt_infra_autostart: "no"
+
+# Guest user set to match KVM host user
+virt_infra_user: "{{ lookup('env', 'USER' ) }}"
+
+# Password of default user (consider a vault if you need secure passwords)
+# No root password by default
+virt_infra_password: "password"
+#virt_infra_root_password:
+
+# VM specs for guests
+# See virt-install manpage for supported values
+virt_infra_ram: "1024"
+virt_infra_ram_max: "{{ virt_infra_ram }}"
+virt_infra_cpus: "1"
+virt_infra_cpus_max: "{{ virt_infra_cpus }}"
+virt_infra_cpu_model: "host-passthrough"
+virt_infra_machine_type: "q35"
+
+# SSH keys are a list, you can add more than one
+# If not specified, we default to all public keys on KVM host
+virt_infra_ssh_keys: []
+
+# If no SSH keys are specified or found on the KVM host, we create one with this
+virt_infra_ssh_key_size: "2048"
+virt_infra_ssh_key_type: "rsa"
+
+# Whether to enable SSH password auth
+virt_infra_ssh_pwauth: true
+
+# Networks are a list, you can add more than one
+# "type" is optional, both "nat" and "bridge" are supported
+#  - "nat" is default type and should be a libvirt network
+#  - "bridge" type requires the bridge interface as the name (e.g. name: "br0") which also must already be setup on KVM host
+# "model" is also optional
+virt_infra_networks:
+  - name: "default"
+    type: "nat"
+    model: "virtio"
+
+# Disks, support various libvirt options
+# We generally don't set them though and leave it to hypervisor default
+# See virt-install manpage for supported values
+virt_infra_disk_size: "20"
+virt_infra_disk_bus: "scsi"
+virt_infra_disk_io: "threads"
+virt_infra_disk_cache: "writeback"
+
+# Disks are a list, you can add more than one
+# If you override this, you must still include 'boot' device first in the list
+# Only 'name' is required, others are optional (default size is 20GB)
+# All guests require at least a boot drive (which is the default)
+virt_infra_disks:
+  - name: "boot"
+    size: "{{ virt_infra_disk_size }}"
+    bus: "{{ virt_infra_disk_bus }}"
+#   io: "{{ virt_infra_disk_io }}"
+#   cache: "{{ virt_infra_disk_cache }}"
+
+# Default distro is CentOS 7, override in guests or groups
+virt_infra_distro_image: "CentOS-7-x86_64-GenericCloud.qcow2"
+
+# Determine supported variants on your KVM host with command, "osinfo-query os"
+# This doesn't really make much difference to the guest, maybe slightly different bus
+# You could probably just set this as "centos7.0" for all distros, if you wanted to
+#virt_infra_variant: "centos7.0"
+
+# These distro vars are here for reference and convenience
+virt_infra_distro: "centos"
+virt_infra_distro_release: "7"
+virt_infra_distro_image_url: "https://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud.qcow2"
+virt_infra_distro_image_checksum_url: "https://cloud.centos.org/centos/7/images/sha256sum.txt"
+
+## KVM host related
+
+# Connect to system libvirt instance
+virt_infra_host_libvirt_url: "qemu:///system"
+
+# Path where disk images are kept
+virt_infra_host_image_path: "/var/lib/libvirt/images"
+
+# Networks on kvmhost are a list, you can add more than one
+# You can create and remove NAT networks on kvmhost (creating bridges not supported)
+# The 'default' network is the standard one shipped with libvirt
+# By default we don't remove any networks (empty absent list)
+virt_infra_host_networks:
+  absent: []
+  present:
+    - name: "default"
+      ip_address: "192.168.112.1"
+      subnet: "255.255.255.0"
+      dhcp_start: "192.168.112.2"
+      dhcp_end: "192.168.112.254"
+
+# Command for creating ISO images
+virt_infra_mkiso_cmd: genisoimage
+
+# List of binaries to check for on KVM Host
+virt_infra_host_deps:
+  - qemu-img
+  - osinfo-query
+  - virsh
+  - virt-customize
+  - virt-sysprep

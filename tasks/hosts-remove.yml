@@ -1,0 +1,47 @@
+---
+# These tasks needs to update the same file
+# Because multiple tasks are run in parallel, data can go missing
+# We need to either run this in serial, or
+# Run this once only, on one host with a lookup for all other hosts
+# Because serial is messy and requires custom plays, I'm doing the latter
+# Thus, while this should be run against the kvmhost host, the task out show as being against one of your guests
+- name: Remove guests from /etc/hosts
+  blockinfile:
+    create: true
+    state: absent
+    path: /etc/hosts
+    marker: "# {mark} {{ hostvars[item]['inventory_hostname'] }} managed by virt_infra Ansible playbook"
+  become: true
+  delegate_to: "{{ groups['kvmhost'][0] }}"
+  when:
+    - hostvars[item]['virt_infra_state'] | default(virt_infra_state) == "undefined"
+  with_items: "{{ play_hosts }}"
+  run_once: true
+
+- name: Remove guests from SSH known_hosts
+  blockinfile:
+    create: true
+    mode: 0755
+    state: absent
+    path: "{{ lookup('env','HOME') }}/.ssh/known_hosts"
+    marker: "# {mark} {{ hostvars[item]['inventory_hostname'] }} managed by virt_infra Ansible playbook"
+  become: false
+  delegate_to: "{{ groups['kvmhost'][0] }}"
+  when:
+    - hostvars[item]['virt_infra_state'] | default(virt_infra_state) == "undefined"
+  with_items: "{{ play_hosts }}"
+  run_once: true
+
+- name: Remove guests from SSH config
+  blockinfile:
+    create: true
+    mode: 0755
+    state: absent
+    path: "{{ lookup('env','HOME') }}/.ssh/config"
+    marker: "# {mark} {{ hostvars[item]['inventory_hostname'] }} managed by virt_infra Ansible playbook"
+  become: false
+  delegate_to: "{{ groups['kvmhost'][0] }}"
+  when:
+    - hostvars[item]['virt_infra_state'] | default(virt_infra_state) == "undefined"
+  with_items: "{{ play_hosts }}"
+  run_once: true

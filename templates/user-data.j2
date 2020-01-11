@@ -1,0 +1,35 @@
+#cloud-config
+# Set the default user
+system_info:
+  default_user:
+    name: {{ virt_infra_user | default(lookup('env', 'USER')) }}
+
+# Unlock the default user
+chpasswd:
+  list: |
+     {{ virt_infra_user | default(lookup('env', 'USER')) }}:{{ virt_infra_password | default(virt_infra_password) }}
+  expire: False
+
+# System settings
+resize_rootfs: True
+ssh_pwauth: "{{ virt_infra_ssh_pwauth | default(True) }}"
+ssh_authorized_keys:
+{% for key in virt_infra_ssh_keys | default(hostvars[groups['kvmhost'][0]].virt_infra_ssh_keys, true) %}
+  - {{ key }}
+{% endfor %}
+timezone: {{ virt_infra_timezone | default(hostvars[groups['kvmhost'][0]].virt_infra_timezone, true) }}
+{% if virt_infra_root_password is defined and virt_infra_root_password %}
+disable_root: false
+{% endif %}
+
+# Template for any additional commands on boot
+bootcmd:
+ - [ sh, -c, echo "=========bootcmd=========" ]
+
+# Note that the file to disable cloud-init is checked to know when the vm is booted
+runcmd:
+ - [ sh, -c, echo "=========runcmd=========" ]
+ - touch /etc/cloud/cloud-init.disabled
+
+# To know when to log in, if reading console
+final_message: "SYSTEM READY TO LOG IN"

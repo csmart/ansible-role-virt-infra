@@ -1,0 +1,88 @@
+---
+# Use the KVM host to get defaults for VMs, unless overridden in inventory
+- name: Get details of KVM host
+  setup:
+  when:
+    - inventory_hostname in groups['kvmhost']
+
+# Use SSH keys on KVM host to use as defaults for cloud-init
+# These are only used if no keys are specified
+- name: Find SSH public keys on KVM host for cloud-init if none specified
+  find:
+    paths: "{{ lookup('env','HOME') }}/.ssh/"
+    patterns: '*.pub'
+  register: result_ssh_key_list
+  changed_when: false
+  when:
+    - inventory_hostname in groups['kvmhost']
+    - hostvars[groups['kvmhost'][0]].virt_infra_ssh_keys is not defined
+
+- name: Read public SSH keys on KVM host if none specified
+  command: "cat {{ item.path }}"
+  register: result_ssh_keys
+  with_items: "{{ result_ssh_key_list.files }}"
+  changed_when: false
+  when:
+    - inventory_hostname in groups['kvmhost']
+    - hostvars[groups['kvmhost'][0]].virt_infra_ssh_keys is not defined
+
+- name: Set SSH keys as KVM host default for cloud-init
+  set_fact:
+    virt_infra_ssh_keys: "{{ virt_infra_ssh_keys + [ item.stdout ] }}"
+  with_items: "{{ result_ssh_keys.results }}"
+  when:
+    - inventory_hostname in groups['kvmhost']
+    - hostvars[groups['kvmhost'][0]].virt_infra_ssh_keys is not defined
+
+# If no SSH keys found or specified, we create one, which requires ~/.ssh dir to exist
+- name: Ensure SSH dir exists if no SSH keys found or specified
+  file:
+    path: "{{ lookup('env','HOME') }}/.ssh"
+    state: directory
+  when:
+    - inventory_hostname in groups['kvmhost']
+    - hostvars[groups['kvmhost'][0]].virt_infra_ssh_keys is not defined
+    - result_ssh_key_list.files | length == 0
+
+- name: Create SSH keypair if none found or specified
+  openssh_keypair:
+    path: "{{ lookup('env','HOME') }}/.ssh/id_{{ virt_infra_ssh_key_type | default('rsa') }}-virt-infra-ansible"
+    size: "{{ virt_infra_ssh_key_size }}"
+    type: "{{ virt_infra_ssh_key_type }}"
+    state: present
+  register: result_ssh_key_gen
+  when:
+    - inventory_hostname in groups['kvmhost']
+    - hostvars[groups['kvmhost'][0]].virt_infra_ssh_keys is not defined
+    - result_ssh_key_list.files | length == 0
+
+- name: Set created SSH key as KVM host default for cloud-init
+  set_fact:
+    virt_infra_ssh_keys: "{{ virt_infra_ssh_keys + [ result_ssh_key_gen.public_key ] }}"
+  when:
+    - inventory_hostname in groups['kvmhost']
+    - hostvars[groups['kvmhost'][0]].virt_infra_ssh_keys is not defined
+    - result_ssh_key_gen.public_key is defined and result_ssh_key_gen.public_key
+
+# Get timezone from KVM host to use as defaults for cloud-init
+# This is only used if no timezone is specified
+# Unfortunately can't use date from "{{ hostvars[groups['kvmhost'][0]].ansible_date_time.tz }}"
+# as it's an achronym which can't be resolved to country/city for cloud-init
+# Due to Ubuntu Bionic, can't use 'timedatectl -p Timezone --value show'
+- name: Get timezone from KVM host for cloud-init
+  shell: |
+    set -o pipefail
+    timedatectl |grep 'Time zone:' |awk '{ print $3 }'
+  register: result_timezone
+  changed_when: false
+  ignore_errors: true
+  when:
+    - inventory_hostname in groups['kvmhost']
+  args:
+    executable: /bin/bash
+
+- name: Store timezone from KVM host
+  set_fact:
+    virt_infra_timezone: "{{ result_timezone.stdout }}"
+  when:
+    - inventory_hostname in groups['kvmhost']

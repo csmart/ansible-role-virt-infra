@@ -1,0 +1,42 @@
+---
+# This is only run on KVM host
+# If network list already defined, then move the variable.
+# This way we can get the latest and previous list of networks
+- name: Move network details to old list
+  set_fact:
+    result_libvirt_network_before: "{{ result_libvirt_network }}"
+  when:
+    - inventory_hostname in groups['kvmhost']
+    - result_libvirt_network is defined and result_libvirt_network
+  run_once: true
+  changed_when: false
+
+- name: Move list of networks to old list
+  set_fact:
+    result_libvirt_network_list_before: "{{ result_libvirt_network_list }}"
+  when:
+    - inventory_hostname in groups['kvmhost']
+    - result_libvirt_network_list is defined and result_libvirt_network_list
+  run_once: true
+  changed_when: false
+
+# Only run on KVM host
+- name: Get network facts
+  virt_net:
+    command: facts
+    uri: "{{ hostvars[groups['kvmhost'][0]].virt_infra_host_libvirt_url | default(virt_infra_host_libvirt_url) }}"
+  register: result_libvirt_network
+  become: true
+  run_once: true
+  when:
+    - inventory_hostname in groups['kvmhost']
+
+- name: Get network list
+  virt_net:
+    command: list_nets
+    uri: "{{ hostvars[groups['kvmhost'][0]].virt_infra_host_libvirt_url | default(virt_infra_host_libvirt_url) }}"
+  register: result_libvirt_network_list
+  become: true
+  run_once: true
+  when:
+    - inventory_hostname in groups['kvmhost']

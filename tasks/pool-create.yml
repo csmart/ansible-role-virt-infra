@@ -1,0 +1,52 @@
+---
+# Ensure the default storage pool is active (on a fresh KVM box this will not be active by default)
+# While starting a VM will enable the pool, this can cause some VMs to fail
+# because VMs are started in parallel and multiple VMs will try to start the pool
+# This assumes the pool is called default and uses the path specified in vars, /var/lib/libvirt/images by default
+- name: List storage pools
+  virt_pool:
+    command: list_pools
+  register: result_pool_list
+  become: true
+  when:
+    - inventory_hostname in groups['kvmhost']
+
+- name: Get info on storage pools
+  virt_pool:
+    command: info
+  register: result_pool_info
+  become: true
+  when:
+    - inventory_hostname in groups['kvmhost']
+
+- name: Define storage pool
+  virt_pool:
+    command: define
+    name: default
+    xml: '{{ lookup("template", "virt-pool.j2") }}'
+  register: result_pool_define
+  become: true
+  when:
+    - inventory_hostname in groups['kvmhost']
+    - '"default" not in result_pool_list'
+
+- name: Build storage pool
+  virt_pool:
+    command: build
+    name: default
+  become: true
+  register: result_pool_build
+  when:
+    - inventory_hostname in groups['kvmhost']
+    - '"default" in result_pool_list'
+    - result_pool_info.pools.default.state != 'active'
+  ignore_errors: true
+
+- name: Ensure storage pool is active
+  virt_pool:
+    state: "active"
+    name: "default"
+  become: true
+  register: result_pool_activate
+  when:
+    - inventory_hostname in groups['kvmhost']

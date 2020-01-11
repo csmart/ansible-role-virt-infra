@@ -1,0 +1,15 @@
+---
+# Set defaults for the guests based on the KVM host
+- name: Use KVM host architecture for VMs when not specified
+  set_fact:
+    virt_infra_architecture: "{{ hostvars[groups['kvmhost'][0]].ansible_architecture }}"
+  when:
+    - inventory_hostname not in groups['kvmhost']
+    - virt_infra_architecture is not defined
+
+- name: Use KVM host domain for VMs when not specified
+  set_fact:
+    virt_infra_domainname: "{{ hostvars[groups['kvmhost'][0]].ansible_domain }}"
+  when:
+    - inventory_hostname not in groups['kvmhost']
+    - virt_infra_domainname is not defined

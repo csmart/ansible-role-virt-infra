@@ -1,0 +1,53 @@
+---
+# We run this against any VMs which are now in running state
+#- name: Wait for guests to be contactable
+#  wait_for_connection:
+#    timeout: 600
+#  when:
+#    - inventory_hostname not in groups['kvmhost']
+#    - virt_infra_state == "running"
+#
+
+- name: Wait for guests to be contactable via SSH
+  wait_for:
+    port: 22
+    host: "{{ inventory_hostname }}"
+    search_regex: OpenSSH
+    timeout: 600
+  when:
+    - inventory_hostname not in groups['kvmhost']
+    - virt_infra_state == "running"
+  delegate_to: "{{ groups['kvmhost'][0] }}"
+
+- name: Get guest SSH fingerprints
+  shell: "ssh-keyscan {{ inventory_hostname }} {{ vm_ip }} | sort"
+  delegate_to: "{{ groups['kvmhost'][0] }}"
+  register: result_keyscan
+  changed_when: false
+  when:
+    - inventory_hostname not in groups['kvmhost']
+    - virt_infra_state == "running"
+
+- name: Add guest fingerprint to SSH known_hosts
+  blockinfile:
+    create: true
+    mode: 0755
+    state: present
+    path: "{{ lookup('env','HOME') }}/.ssh/known_hosts"
+    marker: "# {mark} {{ hostvars[item]['inventory_hostname'] }} managed by virt_infra Ansible playbook"
+    block: |-
+      {{ hostvars[item]['result_keyscan']['stdout'] }}
+  become: false
+  delegate_to: "{{ groups['kvmhost'][0] }}"
+  when:
+    - hostvars[item]['result_keyscan']['stdout'] is defined and hostvars[item]['result_keyscan']['stdout']
+    - hostvars[item]['virt_infra_state'] | default(virt_infra_state) == "running"
+  with_items: "{{ play_hosts }}"
+  run_once: true
+
+- name: Wait for cloud-init to finish
+  wait_for:
+    path: /etc/cloud/cloud-init.disabled
+  when:
+    - inventory_hostname not in groups['kvmhost']
+    - virt_infra_state == "running"

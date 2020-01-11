@@ -1,0 +1,47 @@
+---
+# This is only run on KVM host
+# If result_all_vms already defined, then move the variable.
+# This way we can get the latest and previous list of VMs
+- name: Move list of all VMs to old list
+  set_fact:
+    result_all_vms_before: "{{ result_all_vms }}"
+  when:
+    - inventory_hostname in groups['kvmhost']
+    - result_all_vms is defined and result_all_vms
+  changed_when: false
+
+- name: Move list of running VMs to old list
+  set_fact:
+    result_running_vms_before: "{{ result_running_vms }}"
+  when:
+    - inventory_hostname in groups['kvmhost']
+    - result_running_vms is defined and result_running_vms
+  changed_when: false
+
+- name: Get list of all VMs
+  virt:
+    command: list_vms
+    uri: "{{ hostvars[groups['kvmhost'][0]].virt_infra_host_libvirt_url | default(virt_infra_host_libvirt_url) }}"
+  register: result_all_vms
+  become: true
+  when:
+    - inventory_hostname in groups['kvmhost']
+
+- name: Get list of running VMs
+  virt:
+    command: list_vms
+    state: running
+    uri: "{{ hostvars[groups['kvmhost'][0]].virt_infra_host_libvirt_url | default(virt_infra_host_libvirt_url) }}"
+  register: result_running_vms
+  become: true
+  when:
+    - inventory_hostname in groups['kvmhost']
+
+- name: Get info on all VMs
+  virt:
+    command: info
+    uri: "{{ hostvars[groups['kvmhost'][0]].virt_infra_host_libvirt_url | default(virt_infra_host_libvirt_url) }}"
+  register: result_info_vms
+  become: true
+  when:
+    - inventory_hostname in groups['kvmhost']
