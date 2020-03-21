@@ -1,14 +1,23 @@
 <network>
   <name>{{ item.name | default("default") }}</name>
-  <forward mode='nat'>
+  <mac address='{{ item.mac | default("52:54:00" | random_mac) }}'/>
+  {% if item.domain is defined and item.domain %}
+  <domain name="{{ item.domain }}"/>
+  {% endif %}
+  {% if (item.type is undefined or (item.type is defined and item.type == "nat")) and item.ip_address is defined and item.ip_address %}
+  <forward mode='nat'{% if item.nat_dev is defined and item.nat_dev %} dev='{{ item.nat_dev }}'{% endif %}>
     <nat>
       <port start='1024' end='65535'/>
     </nat>
   </forward>
-  <mac address='{{ "52:54:00" | random_mac }}'/>
+  {% endif %}
+  {% if item.ip_address is defined and item.ip_address %}
   <ip address='{{ item.ip_address | default("192.168.122.1") }}' netmask='{{ item.subnet | default("255.255.255.0") }}'>
+    {% if item.dhcp_start is defined and item.dhcp_start and item.dhcp_end is defined and item.dhcp_end %}
     <dhcp>
       <range start='{{ item.dhcp_start |default("192.168.122.2") }}' end='{{ item.dhcp_end |default("192.168.122.254") }}'/>
     </dhcp>
+    {% endif %}
   </ip>
+  {% endif %}
 </network>
