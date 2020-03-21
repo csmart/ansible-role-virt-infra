@@ -97,6 +97,7 @@ virt_infra_host_networks:
   absent: []
   present:
     - name: "default"
+      type: "nat"
       ip_address: "192.168.112.1"
       subnet: "255.255.255.0"
       dhcp_start: "192.168.112.2"
