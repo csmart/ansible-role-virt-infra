@@ -8,22 +8,16 @@
     --connect {{ hostvars[groups['kvmhost'][0]].virt_infra_host_libvirt_url | default(virt_infra_host_libvirt_url) }}
     --cpu {{ virt_infra_cpu_model }}
     {% for disk in virt_infra_disks %}
-    {% if disk.name is defined and disk.name == "boot" %}
-    --disk {{ hostvars[groups['kvmhost'][0]].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-{{ disk.name }}.qcow2,format=qcow2,bus={{ disk.bus | default(virt_infra_disk_bus) }}{% if disk.cache is defined and disk.cache %},cache={{ disk.cache }}{% endif %}{% if disk.io is defined and disk.io %},io={{ disk.io }}{% endif %}
-    --disk {{ hostvars[groups['kvmhost'][0]].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-cloudinit.iso,device=cdrom,bus=scsi,format=iso
-    {% endif %}
-    {% endfor %}
-    {% for disk in virt_infra_disks %}
-    {% if disk.name is defined and disk.name != "boot" %}
-    {% if disk.bus is defined and disk.bus == "nvme" and disk.name is defined and disk.name != "boot" %}
+    {% if disk.bus is defined and disk.bus == "nvme" %}
     --qemu-commandline='-drive file={{ hostvars[groups['kvmhost'][0]].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-{{ disk.name }}.qcow2,format=qcow2,if=none,id={{ disk.name | upper }}'
     --qemu-commandline='-device nvme,drive={{ disk.name | upper }},serial={{ disk.name }}'
     {% else %}
-    --disk {{ hostvars[groups['kvmhost'][0]].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-{{ disk.name }}.qcow2,format=qcow2,bus={{ disk.bus | default(virt_infra_disk_bus) }}{% if disk.cache is defined and disk.cache %},cache={{ disk.cache }}{% endif %}{% if disk.io is defined and disk.io %},io={{ disk.io }}{% endif %}
-    {% endif %}
+    --disk {{ hostvars[groups['kvmhost'][0]].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-{{ disk.name }}.qcow2,serial={{ disk.name }},{% if disk.name == "boot" %}boot_order=1,{% endif %}format=qcow2,bus={{ disk.bus | default(virt_infra_disk_bus) }}{% if disk.cache is defined and disk.cache %},cache={{ disk.cache }}{% endif %}{% if disk.io is defined and disk.io %},io={{ disk.io }}{% endif %}
     {% endif %}
     {% endfor %}
-    --controller type=scsi,model=virtio-scsi
+    --disk {{ hostvars[groups['kvmhost'][0]].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-cloudinit.iso,device=cdrom,bus=scsi,format=iso
+    --controller type=scsi,model=virtio-scsi,index=0
+    --controller type=scsi,model=virtio-scsi,index=1
     --channel unix,target_type=virtio,name=org.qemu.guest_agent.0
     --graphics spice
     --machine {{ virt_infra_machine_type }}
