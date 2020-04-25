@@ -120,6 +120,7 @@
   when:
     - inventory_hostname not in groups['kvmhost']
     - inventory_hostname not in hostvars[groups['kvmhost'][0]].result_all_vms.list_vms
+    - not ('rhel' in virt_infra_variant and (virt_infra_sm_creds is undefined or virt_infra_sm_creds is defined and not virt_infra_sm_creds))
     - virt_infra_state != "undefined"
   delegate_to: "{{ groups['kvmhost'][0] }}"
 
