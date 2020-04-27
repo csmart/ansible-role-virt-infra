@@ -44,7 +44,7 @@ You can create private NAT libvirt networks on the KVM host and then put VMs on
 any number of them. Guests can use those libvirt networks or _existing_ bridge
 devices (e.g. br0) and Open vSwitch (OVS) bridge on the KVM host (this won't
 create bridges on the host, but it will check that the bridge interface
-exists).
+exists). You can specify the MAC for each interface if you require.
 
 This supports various distros and uses their qcow2 [cloud
 images](#guest-cloud-images) for convenience (although you could use your own
@@ -558,7 +558,8 @@ example:
       - name: "data"
         bus: "sata"
     virt_infra_networks:
-      - "example"
+      - name: "example"
+        mac: 52:54:00:aa:bb:cc
 ```
 
 ## Example Playbook
