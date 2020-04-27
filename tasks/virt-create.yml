@@ -40,6 +40,8 @@
     {% for network in virt_infra_networks %}
     {% if network.type is defined and network.type == "bridge" %}
     --network bridge={{ network.name }}{% if network.model is defined and network.model %},model={{ network.model }}{% endif %}
+    {% elif network.type is defined and network.type == "ovs" %}
+    --network network={{ network.name }},portgroup={{ network.portgroup }}{% if network.model is defined and network.model %},model={{ network.model }}{% endif %}
     {% else %}
     --network network={{ network.name }}{% if network.model is defined and network.model %},model={{ network.model }}{% endif %}
     {% endif %}

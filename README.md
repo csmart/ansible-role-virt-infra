@@ -42,8 +42,9 @@ supported, including _scsi_, _sata_, _virtio_ and even _nvme_.
 
 You can create private NAT libvirt networks on the KVM host and then put VMs on
 any number of them. Guests can use those libvirt networks or _existing_ bridge
-devices (e.g. br0) on the KVM host (this won't create bridges on the host, but
-it will check that the bridge interface exists).
+devices (e.g. br0) and Open vSwitch (OVS) bridge on the KVM host (this won't
+create bridges on the host, but it will check that the bridge interface
+exists).
 
 This supports various distros and uses their qcow2 [cloud
 images](#guest-cloud-images) for convenience (although you could use your own
@@ -369,6 +370,7 @@ virt_infra_ssh_pwauth: true
 # "type" is optional, both "nat" and "bridge" are supported
 #  - "nat" is default type and should be a libvirt network
 #  - "bridge" type requires the bridge interface (e.g. br0) to already exist on KVM host
+#  - "ovs" type requires the OVS bridge interface (e.g. ovsbr0) to already exist on KVM host
 # "model" is also optional
 virt_infra_networks:
   - name: "default"
@@ -526,6 +528,9 @@ example:
         - name: "extra_network"
           type: nat
           model: e1000
+        - name: ovs-bridge
+          portgroup: ovs-portgroup
+          type: ovs
       virt_infra_disks:
         - name: "boot"
         - name: "nvme"

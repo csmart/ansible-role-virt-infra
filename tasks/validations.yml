@@ -223,6 +223,18 @@
       with_items: "{{ virt_infra_networks }}"
       changed_when: true
 
+    - name: "Guests: Check OVS network has bridge specified"
+      set_fact:
+        validations_failed: "{{ validations_failed|default([]) + [ item.name + ' OVS network does not specify OVS bridge device (bridge_dev)' ] }}"
+      when:
+        - inventory_hostname not in groups['kvmhost']
+        - virt_infra_state != "undefined"
+        - hostvars[groups['kvmhost'][0]].virt_infra_host_networks.present is defined
+        - item.type is defined and item.type == "ovs"
+        - item.bridge_dev is not defined
+      with_items: "{{ hostvars[groups['kvmhost'][0]].virt_infra_host_networks.present }}"
+      changed_when: true
+
     - name: "Guests: Check if required bridge interfaces exist on KVM host"
       set_fact:
         validations_failed: "{{ validations_failed|default([]) + [ item.name + ' bridge interface missing on KVM host'] }}"
