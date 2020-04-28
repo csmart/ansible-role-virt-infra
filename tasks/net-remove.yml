@@ -8,6 +8,7 @@
   with_items: "{{ virt_infra_host_networks.absent }}"
   when:
     - inventory_hostname in groups['kvmhost']
+    - item.type is not defined or (item.type is defined and item.type != "bridge")
     - item.name is defined
   become: true
 
@@ -20,5 +21,6 @@
   with_items: "{{ virt_infra_host_networks.absent }}"
   when:
     - inventory_hostname in groups['kvmhost']
+    - item.type is not defined or (item.type is defined and item.type != "bridge")
     - item.name is defined
   become: true

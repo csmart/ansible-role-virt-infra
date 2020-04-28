@@ -12,6 +12,7 @@
   with_items: "{{ virt_infra_host_networks.present }}"
   when:
     - inventory_hostname in groups['kvmhost']
+    - item.type is not defined or (item.type is defined and item.type != "bridge")
     - item.name is defined
 
 - name: Start networks
@@ -24,6 +25,7 @@
   with_items: "{{ virt_infra_host_networks.present }}"
   when:
     - inventory_hostname in groups['kvmhost']
+    - item.type is not defined or (item.type is defined and item.type != "bridge")
     - item.name is defined
 
 - name: Autostart networks
@@ -36,4 +38,5 @@
   with_items: "{{ virt_infra_host_networks.present }}"
   when:
     - inventory_hostname in groups['kvmhost']
+    - item.type is not defined or (item.type is defined and item.type != "bridge")
     - item.name is defined

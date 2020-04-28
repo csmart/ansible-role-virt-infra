@@ -1,6 +1,8 @@
 <network>
   <name>{{ item.name | default("default") }}</name>
+  {% if item.type is defined and item.type != "ovs" %}
   <mac address='{{ item.mac | default("52:54:00" | random_mac) }}'/>
+  {% endif %}
   {% if item.domain is defined and item.domain %}
   <domain name="{{ item.domain }}"/>
   {% endif %}
@@ -10,6 +12,26 @@
       <port start='1024' end='65535'/>
     </nat>
   </forward>
+  {% endif %}
+  {% if item.type is defined and item.type == "ovs" %}
+  <virtualport type='openvswitch'/>
+  <forward mode="bridge"/>
+  {% if item.bridge_dev is defined and item.bridge_dev %}
+  <bridge name="{{ item.bridge_dev }}"/>
+  {% endif %}
+  {% if item.portgroup is defined and item.portgroup %}
+  {% for group in item.portgroup %}
+  <portgroup name="{{ group.name }}">
+    {% if group.vlan is defined and group.vlan %}
+    <vlan{% if group.trunk is defined and group.trunk %} trunk='yes'{% endif %}>
+      {% for vlan in group.vlan %}
+      <tag id='{{ vlan }}'{% if group.native_vlan is defined and group.native_vlan == vlan %} nativeMode='untagged'{% endif %} />
+      {% endfor %}
+    </vlan>
+    {% endif %}
+  </portgroup>
+  {% endfor %}
+  {% endif %}
   {% endif %}
   {% if item.ip_address is defined and item.ip_address %}
   <ip address='{{ item.ip_address | default("192.168.122.1") }}' netmask='{{ item.subnet | default("255.255.255.0") }}'>
