@@ -17,10 +17,10 @@
     {% else %}
     --disk {{ hostvars[groups['kvmhost'][0]].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-{{ disk.name }}.qcow2,serial={{ disk.name }},{% if disk.name == "boot" %}boot_order=1,{% endif %}format=qcow2,bus={{ disk.bus | default(virt_infra_disk_bus) }}{% if disk.cache is defined and disk.cache %},cache={{ disk.cache }}{% endif %}{% if disk.io is defined and disk.io %},io={{ disk.io }}{% endif %}
     {% endif %}
-    {% if disk.bus is defined and disk.bus == "scsi" and disk.ssd is defined and disk.ssd | bool == true %}
+    {% if (disk.bus is defined and disk.bus == "scsi" or disk.bus is undefined) and disk.ssd is defined and disk.ssd | bool == true %}
     --qemu-commandline='-set device.scsi{{ scsi_controller_count | length }}-0-0-{{ scsi_disk_count | length }}.rotation_rate=1'
     {% endif %}
-    {% if disk.bus is defined and disk.bus == "scsi" %}
+    {% if disk.bus is defined and disk.bus == "scsi" or disk.bus is undefined %}
     {% set __ = scsi_disk_count.append(1) %}
     {% endif %}
     {% if scsi_disk_count | length > 6  %}
@@ -29,7 +29,7 @@
     --controller type=scsi,model=virtio-scsi,index={{ scsi_controller_count | length }}
     {% endif %}
     {% endfor %}
-    {% if scsi_disk_count | length > 2  %}
+    {% if scsi_disk_count | length > 3  %}
     --controller type=scsi,model=virtio-scsi,index={{ ( scsi_controller_count | length ) + 1 }}
     {% endif %}
     --disk {{ hostvars[groups['kvmhost'][0]].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-cloudinit.iso,device=cdrom,bus=scsi,format=iso
