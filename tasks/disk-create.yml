@@ -13,7 +13,6 @@
   when:
     - inventory_hostname not in groups['kvmhost']
     - inventory_hostname not in hostvars[groups['kvmhost'][0]].result_all_vms.list_vms
-    - virt_infra_state != "undefined"
   delegate_to: "{{ groups['kvmhost'][0] }}"
 
 - name: Check if boot disk is set to keep
@@ -23,7 +22,6 @@
   when:
     - inventory_hostname not in groups['kvmhost']
     - inventory_hostname not in hostvars[groups['kvmhost'][0]].result_all_vms.list_vms
-    - virt_infra_state != "undefined"
     - item.name == "boot"
     - item.keep is defined and item.keep
 
@@ -144,9 +142,9 @@
   when:
     - inventory_hostname not in groups['kvmhost']
     - inventory_hostname not in hostvars[groups['kvmhost'][0]].result_all_vms.list_vms
-    - not result_stat_boot.stat.exists or (result_stat_boot.stat.exists and keep_boot is not defined or keep_boot is defined and not keep_boot)
-    - not ('rhel' in virt_infra_variant and (virt_infra_sm_creds is undefined or virt_infra_sm_creds is defined and not virt_infra_sm_creds))
     - virt_infra_state != "undefined"
+    - not result_stat_boot.stat.exists or (result_stat_boot.stat.exists and (keep_boot is not defined or keep_boot is defined and not keep_boot))
+    - not ((virt_infra_variant is defined and 'rhel' in virt_infra_variant) and (virt_infra_sm_creds is undefined or virt_infra_sm_creds is defined and not virt_infra_sm_creds))
   delegate_to: "{{ groups['kvmhost'][0] }}"
 
 - name: Remove RHEL registration
