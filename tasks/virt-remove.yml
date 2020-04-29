@@ -2,7 +2,7 @@
 - name: Undefine VM
   command: >
     virsh --connect {{ hostvars[groups['kvmhost'][0]].virt_infra_host_libvirt_url | default(virt_infra_host_libvirt_url) }}
-    undefine --remove-all-storage {{ inventory_hostname }}
+    undefine {{ inventory_hostname }}
   become: true
   when:
     - inventory_hostname not in groups['kvmhost']

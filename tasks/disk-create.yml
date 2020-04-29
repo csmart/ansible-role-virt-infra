@@ -2,7 +2,31 @@
 # Create the disks for VMs
 # We only create disks if they don't already exist
 # and if the VM is not going to be undefined
-# Boot must be defined first in virt_infra_disks
+# Disks have the option to be kept, so we need to check for boot
+# If boot already exists and it's set to keep, we don't sysprep it
+# Ideally, boot should be defined first in virt_infra_disks so that it's /dev/sda
+
+- name: Check if boot disk already exists
+  stat:
+    path: "{{ hostvars[groups['kvmhost'][0]].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-boot.qcow2"
+  register: result_stat_boot
+  when:
+    - inventory_hostname not in groups['kvmhost']
+    - inventory_hostname not in hostvars[groups['kvmhost'][0]].result_all_vms.list_vms
+    - virt_infra_state != "undefined"
+  delegate_to: "{{ groups['kvmhost'][0] }}"
+
+- name: Check if boot disk is set to keep
+  set_fact:
+    keep_boot: "{{ item.keep }}"
+  with_items: "{{ virt_infra_disks }}"
+  when:
+    - inventory_hostname not in groups['kvmhost']
+    - inventory_hostname not in hostvars[groups['kvmhost'][0]].result_all_vms.list_vms
+    - virt_infra_state != "undefined"
+    - item.name == "boot"
+    - item.keep is defined and item.keep
+
 - name: Create disks for VM
   command: >
     qemu-img create -f qcow2
@@ -120,6 +144,7 @@
   when:
     - inventory_hostname not in groups['kvmhost']
     - inventory_hostname not in hostvars[groups['kvmhost'][0]].result_all_vms.list_vms
+    - not result_stat_boot.stat.exists or (result_stat_boot.stat.exists and keep_boot is not defined or keep_boot is defined and not keep_boot)
     - not ('rhel' in virt_infra_variant and (virt_infra_sm_creds is undefined or virt_infra_sm_creds is defined and not virt_infra_sm_creds))
     - virt_infra_state != "undefined"
   delegate_to: "{{ groups['kvmhost'][0] }}"
@@ -158,5 +183,6 @@
   when:
     - inventory_hostname not in groups['kvmhost']
     - inventory_hostname not in hostvars[groups['kvmhost'][0]].result_all_vms.list_vms
+    - not result_stat_boot.stat.exists or (result_stat_boot.stat.exists and keep_boot is not defined or keep_boot is defined and not keep_boot)
     - virt_infra_state != "undefined"
   delegate_to: "{{ groups['kvmhost'][0] }}"
