@@ -89,6 +89,10 @@ virt_infra_host_libvirt_url: "qemu:///system"
 # Path where disk images are kept
 virt_infra_host_image_path: "/var/lib/libvirt/images"
 
+# Disable qemu security driver by default
+# This is overridden in distro specific vars
+virt_infra_security_driver: "none"
+
 # Networks on kvmhost are a list, you can add more than one
 # You can create and remove NAT networks on kvmhost (creating bridges not supported)
 # The 'default' network is the standard one shipped with libvirt
