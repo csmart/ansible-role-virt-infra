@@ -14,3 +14,8 @@ virt_infra_host_pkgs_deps:
   - python3-lxml
   - qemu-utils
   - virtinst
+
+virt_infra_host_image_owner: libvirt-qemu
+virt_infra_host_image_group: libvirt-qemu
+
+virt_infra_security_driver: apparmor
