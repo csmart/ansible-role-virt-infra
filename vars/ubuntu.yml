@@ -12,6 +12,7 @@ virt_infra_host_pkgs_deps:
   - libvirt-clients
   - python3-libvirt
   - python3-lxml
+  - python3-pip
   - qemu-utils
   - virtinst
 

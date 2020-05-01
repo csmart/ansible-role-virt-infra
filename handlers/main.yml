@@ -1,1 +1,28 @@
 ---
+# vbmcd does not always remove ports or start properly on the fly
+# restarting the daemon helps make it more reliable
+# however ansible doesn't seem to ensure it actually came back up
+# so perform manual stop and start
+- name: "Stop virtualbmc daemon"
+  service:
+    name: "{{ virt_infra_vbmc_service | default('vbmcd') }}"
+    state: stopped
+    enabled: yes
+  listen: "restart virtual bmc"
+  register: result_vbmcd_stop
+  become: true
+  changed_when: true
+  delegate_to: "{{ groups['kvmhost'][0] }}"
+  run_once: true
+
+- name: "Start virtualbmc daemon"
+  service:
+    name: "{{ virt_infra_vbmc_service | default('vbmcd') }}"
+    state: started
+    enabled: yes
+  listen: "restart virtual bmc"
+  register: result_vbmcd_start
+  become: true
+  changed_when: true
+  delegate_to: "{{ groups['kvmhost'][0] }}"
+  run_once: true

@@ -1,0 +1,23 @@
+---
+- name: Remove virtual BMC
+  shell: "vbmc delete {{ hostvars[item]['inventory_hostname'] }}"
+  args:
+    executable: /bin/bash
+  become: true
+  register: result_vbmc_remove
+  retries: 10
+  delay: 2
+  until: result_vbmc_remove is succeeded
+  when:
+    - hostvars[item]['inventory_hostname'] not in groups['kvmhost']
+    - hostvars[item]['virt_infra_state'] | default(virt_infra_state) == "undefined"
+    - hostvars[item]['virt_infra_vbmc_port'] is defined and hostvars[item]['virt_infra_vbmc_port']
+    - hostvars[groups["kvmhost"][0]].virt_infra_vbmc is defined and hostvars[groups["kvmhost"][0]].virt_infra_vbmc or virt_infra_vbmc
+    - hostvars[groups["kvmhost"][0]].result_vbmc_list is defined and hostvars[item]['inventory_hostname'] in hostvars[groups["kvmhost"][0]].result_vbmc_list.stdout
+  delegate_to: "{{ groups['kvmhost'][0] }}"
+  with_items: "{{ play_hosts }}"
+  run_once: true
+  notify:
+    - restart virtual bmc
+
+- meta: flush_handlers

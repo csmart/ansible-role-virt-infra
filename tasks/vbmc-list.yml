@@ -1,0 +1,12 @@
+---
+# This is only run on KVM host
+- name: Get virtual BMC list
+  shell: vbmc list -f json --noindent |sed 's/Domain name/Name/g'
+  register: result_vbmc_list
+  become: true
+  args:
+    executable: /bin/bash
+  when:
+    - inventory_hostname in groups['kvmhost']
+    - hostvars[groups["kvmhost"][0]].virt_infra_vbmc is defined and hostvars[groups["kvmhost"][0]].virt_infra_vbmc or virt_infra_vbmc
+  changed_when: false

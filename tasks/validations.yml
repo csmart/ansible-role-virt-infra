@@ -191,6 +191,139 @@
         - result_apparmor_conf.changed
       become: true
 
+    - name: "KVM host only: Ensure system package of virtualbmc is removed"
+      package:
+        name: "python3-virtualbmc"
+        state: absent
+      become: true
+      register: result_vbmc_remove
+      retries: 30
+      delay: 5
+      until: result_vbmc_remove is succeeded
+      when:
+        - inventory_hostname in groups['kvmhost']
+        - virt_infra_vbmc and virt_infra_vbmc_pip
+      ignore_errors: true
+
+    - name: "KVM host only: Advise unable to remove virtualbmc host package"
+      set_fact:
+        validations_failed: "{{ validations_failed|default([]) + ['KVM host: Failed to remove vbmc host package'] }}"
+      when:
+        - inventory_hostname in groups['kvmhost']
+        - virt_infra_vbmc and virt_infra_vbmc_pip
+        - result_vbmc_remove.failed
+      changed_when: true
+
+    - name: "KVM host only: Install virtualbmc with pip"
+      pip:
+        name: virtualbmc  {%- if virt_infra_vbmc_pip_version is defined %}=={{ virt_infra_vbmc_pip_version }}{% endif %}
+      register: result_vbmc_pip
+      ignore_errors: yes
+      retries: 30
+      delay: 5
+      until: result_vbmc_pip is succeeded
+      when:
+        - inventory_hostname in groups['kvmhost']
+        - virt_infra_vbmc and virt_infra_vbmc_pip
+      become: true
+
+    - name: "KVM host only: Advise unable to install virtualbmc"
+      set_fact:
+        validations_failed: "{{ validations_failed|default([]) + ['KVM host: Failed to install virtualbmc with pip'] }}"
+      when:
+        - inventory_hostname in groups['kvmhost']
+        - virt_infra_vbmc and virt_infra_vbmc_pip
+        - result_vbmc_pip.failed
+      changed_when: true
+
+    - name: "KVM host only: Create virtualbmc service file"
+      template:
+        src: templates/vbmcd.service.j2
+        dest: "/etc/systemd/system/vbmcd.service"
+        mode: '0644'
+      become: true
+      register: result_vbmc_service
+      ignore_errors: yes
+      when:
+        - inventory_hostname in groups['kvmhost']
+        - virt_infra_vbmc and virt_infra_vbmc_pip
+
+    - name: "KVM host only: Advise unable to create virtualbmc service"
+      set_fact:
+        validations_failed: "{{ validations_failed|default([]) + ['KVM host: Failed to create virtualbmc service'] }}"
+      when:
+        - inventory_hostname in groups['kvmhost']
+        - virt_infra_vbmc and virt_infra_vbmc_pip
+        - result_vbmc_service.failed
+      changed_when: true
+
+    - name: "KVM host only: Create virtualbmc config directory"
+      file:
+        path: /etc/virtualbmc
+        state: directory
+        mode: '0755'
+      become: true
+      ignore_errors: yes
+      when:
+        - inventory_hostname in groups['kvmhost']
+        - virt_infra_vbmc and virt_infra_vbmc_pip
+
+    - name: "KVM host only: Create virtualbmc run directory"
+      file:
+        path: /var/lib/vbmcd
+        state: directory
+        mode: '0755'
+      become: true
+      ignore_errors: yes
+      when:
+        - inventory_hostname in groups['kvmhost']
+        - virt_infra_vbmc and virt_infra_vbmc_pip
+
+    - name: "KVM host only: Create config for virtualbmc"
+      template:
+        src: templates/virtualbmc.conf.j2
+        dest: "/etc/virtualbmc/virtualbmc.conf"
+        mode: '0644'
+      ignore_errors: yes
+      become: true
+      when:
+        - inventory_hostname in groups['kvmhost']
+        - virt_infra_vbmc and virt_infra_vbmc_pip
+
+    - name: "KVM host only: Ensure virtualbmc is running"
+      systemd:
+        name: "{{ virt_infra_vbmc_service }}"
+        state: started
+        daemon_reload: yes
+        enabled: yes
+      register: result_virtualbmc
+      ignore_errors: yes
+      when:
+        - inventory_hostname in groups['kvmhost']
+        - virt_infra_vbmc
+      become: true
+
+    - name: "KVM host only: Advise unable to start virtualbmc"
+      set_fact:
+        validations_failed: "{{ validations_failed|default([]) + ['KVM host: Failed to start and enable virtualbmc'] }}"
+      when:
+        - inventory_hostname in groups['kvmhost']
+        - virt_infra_vbmc
+        - result_virtualbmc.failed is defined and result_virtualbmc.failed
+      changed_when: true
+
+    - name: "KVM host only: Get virtual BMC list"
+      shell: vbmc list -f json --noindent |sed 's/Domain name/Name/g'
+      register: result_vbmc_list
+      become: true
+      args:
+        executable: /bin/bash
+      when:
+        - inventory_hostname in groups['kvmhost']
+        - virt_infra_vbmc
+        - result_virtualbmc.failed is defined and not result_virtualbmc.failed
+      changed_when: false
+
     - name: Advise when deps are not installed
       set_fact:
         validations_failed: "{{ validations_failed|default([]) + [ 'KVM host: ' +  item.item + ' not found on KVM host, please install'] }}"
@@ -315,6 +448,28 @@
         - hostvars[groups['kvmhost'][0]].result_osinfo.stdout is defined
         - virt_infra_variant is defined
         - virt_infra_variant not in hostvars[groups['kvmhost'][0]].result_osinfo.stdout
+      changed_when: true
+
+    - name: "Guests: Check that existing vbmc port and name match"
+      set_fact:
+        validations_failed: "{{ validations_failed|default([]) + ['vbmc port exists on ' + item.Port | string + ' but does not match definition of ' + virt_infra_vbmc_port | string ] }}"
+      when:
+        - inventory_hostname not in groups['kvmhost']
+        - virt_infra_vbmc_port is defined
+        - hostvars[groups['kvmhost'][0]].result_vbmc_list.stdout is defined and hostvars[groups['kvmhost'][0]].result_vbmc_list.stdout
+        - item.Name == inventory_hostname and item.Port != virt_infra_vbmc_port
+      with_items: "{{ hostvars[groups['kvmhost'][0]].result_vbmc_list.stdout }}"
+      changed_when: true
+
+    - name: "Guests: Check that vbmc port does not conflict with existing"
+      set_fact:
+        validations_failed: "{{ validations_failed|default([]) + ['vbmc port ' + item.Port | string + ' conflicts with ' + item.Name ] }}"
+      when:
+        - inventory_hostname not in groups['kvmhost']
+        - virt_infra_vbmc_port is defined
+        - hostvars[groups['kvmhost'][0]].result_vbmc_list.stdout is defined and hostvars[groups['kvmhost'][0]].result_vbmc_list.stdout
+        - item.Name != inventory_hostname and item.Port == virt_infra_vbmc_port
+      with_items: "{{ hostvars[groups['kvmhost'][0]].result_vbmc_list.stdout }}"
       changed_when: true
 
     # - name: "Check that disks don't already exist for guest"
