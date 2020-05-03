@@ -49,9 +49,9 @@
 - name: Set permissions on NVMe disk images
   file:
     path: "{{ hostvars[groups['kvmhost'][0]].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-{{ item.name }}.qcow2"
-    owner: "{{ virt_infra_host_image_owner | default('root') }}"
-    group: "{{ virt_infra_host_image_group | default('qemu') }}"
-    mode: "{{ virt_infra_host_image_mode | default('0660') }}"
+    owner: "{{ hostvars[groups['kvmhost'][0]].virt_infra_host_image_owner | default('root') }}"
+    group: "{{ hostvars[groups['kvmhost'][0]].virt_infra_host_image_group | default('qemu') }}"
+    mode: "{{ hostvars[groups['kvmhost'][0]].virt_infra_host_image_mode | default('0660') }}"
   become: true
   when:
     - inventory_hostname not in groups['kvmhost']

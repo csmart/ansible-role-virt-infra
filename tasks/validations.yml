@@ -100,6 +100,34 @@
         executable: /bin/bash
       changed_when: false
 
+    # Set security driver on qemu (none/selinux/apparmor)
+    # RHEL/CentOS/Fedora/openSUSE are set to selinux by default
+    # Debian/Ubuntu are set to apparmor by default
+    # Defaults to "none" when not specified, which enables use of NVMe drives successfully on all distros
+    # Else we get permissions denied on NVMe disk images
+    - name: "KVM host only: Set libvirtd security driver"
+      lineinfile:
+        path: /etc/libvirt/qemu.conf
+        insertafter: '^#security_driver ='
+        regexp: '^security_driver ='
+        line: 'security_driver = "{{ virt_infra_security_driver }}"'
+      register: result_qemuconf
+      when:
+        - inventory_hostname in groups['kvmhost']
+      become: true
+
+    - name: "KVM host only: Restart libvirtd if config changed"
+      service:
+        name: "libvirtd"
+        state: restarted
+        enabled: yes
+      register: result_libvirtd_restart
+      ignore_errors: yes
+      when:
+        - inventory_hostname in groups['kvmhost']
+        - result_qemuconf.changed
+      become: true
+
     - name: "KVM host only: Ensure libvirtd is running"
       service:
         name: "libvirtd"
@@ -137,6 +165,31 @@
         - inventory_hostname in groups['kvmhost']
         - result_libvirtd.list_vms is not defined
       changed_when: true
+
+    # Allow MAC access to NVMe drives when using apparmor
+    # Else we get permissions denied on NVMe disk images
+    - name: "KVM host only: Enable access to NVMe drives in apparmor"
+      lineinfile:
+        path: /etc/apparmor.d/abstractions/libvirt-qemu
+        line: '  /var/lib/libvirt/images/*nvme.qcow2 rwk,'
+      register: result_apparmor_conf
+      when:
+        - inventory_hostname in groups['kvmhost']
+        - virt_infra_security_driver is defined and virt_infra_security_driver == "apparmor"
+      become: true
+
+    - name: "KVM host only: Restart apparmor if config changed"
+      service:
+        name: "apparmor"
+        state: restarted
+        enabled: yes
+      register: result_apparmor
+      ignore_errors: yes
+      when:
+        - inventory_hostname in groups['kvmhost']
+        - virt_infra_security_driver is defined and virt_infra_security_driver == "apparmor"
+        - result_apparmor_conf.changed
+      become: true
 
     - name: Advise when deps are not installed
       set_fact:

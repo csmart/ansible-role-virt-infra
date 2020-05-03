@@ -11,3 +11,5 @@ virt_infra_host_pkgs_deps:
   - python3-lxml
   - qemu-img
   - virt-install
+
+virt_infra_security_driver: selinux
