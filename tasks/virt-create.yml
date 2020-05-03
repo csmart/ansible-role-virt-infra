@@ -4,7 +4,6 @@
   shell: >
     virt-install
     --import
-    --boot hd
     --connect {{ hostvars[groups['kvmhost'][0]].virt_infra_host_libvirt_url | default(virt_infra_host_libvirt_url) }}
     --cpu {{ virt_infra_cpu_model }}
     --controller type=scsi,model=virtio-scsi,index=0
