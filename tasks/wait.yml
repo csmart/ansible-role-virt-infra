@@ -31,7 +31,7 @@
 - name: Add guest fingerprint to SSH known_hosts
   blockinfile:
     create: true
-    mode: 0755
+    mode: 0600
     state: present
     path: "{{ lookup('env','HOME') }}/.ssh/known_hosts"
     marker: "# {mark} {{ hostvars[item]['inventory_hostname'] }} managed by virt_infra Ansible playbook"
