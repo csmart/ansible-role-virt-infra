@@ -23,7 +23,7 @@
 - name: Add host to SSH config
   blockinfile:
     create: true
-    mode: 0755
+    mode: 0600
     state: present
     path: "{{ lookup('env','HOME') }}/.ssh/config"
     marker: "# {mark} {{ hostvars[item]['inventory_hostname'] }} managed by virt_infra Ansible playbook"
