@@ -93,6 +93,15 @@ virt_infra_host_image_path: "/var/lib/libvirt/images"
 # This is overridden in distro specific vars
 virt_infra_security_driver: "none"
 
+# Virtual BMC is disabled by default
+virt_infra_vbmc: false
+
+# By default we install with pip, but if you prefer to do it manually, set this to false
+virt_infra_vbmc_pip: true
+
+# Default vbmc service, override if something else on your distro
+virt_infra_vbmc_service: vbmcd
+
 # Networks on kvmhost are a list, you can add more than one
 # You can create and remove NAT networks on kvmhost (creating bridges not supported)
 # The 'default' network is the standard one shipped with libvirt

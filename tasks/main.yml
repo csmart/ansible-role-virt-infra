@@ -9,10 +9,13 @@
 - include_tasks: pool-create.yml
 - include_tasks: disk-create.yml
 - include_tasks: virt-create.yml
+- include_tasks: vbmc-create.yml
 - include_tasks: net-list.yml
 - include_tasks: virt-list.yml
+- include_tasks: vbmc-list.yml
 - include_tasks: virt-remove.yml
 - include_tasks: disk-remove.yml
+- include_tasks: vbmc-remove.yml
 - include_tasks: hosts-add.yml
 - include_tasks: hosts-remove.yml
 - include_tasks: wait.yml

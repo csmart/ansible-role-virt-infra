@@ -1,0 +1,47 @@
+---
+# Create any virtual BMC interfaces
+- name: Create virtual BMC
+  shell: >
+    vbmc add {{ hostvars[item]['inventory_hostname'] }}
+    --libvirt-uri {{ hostvars[groups['kvmhost'][0]].virt_infra_host_libvirt_url | default(virt_infra_host_libvirt_url) }}
+    --port {{ hostvars[item]['virt_infra_vbmc_port'] }}
+    --username {{ hostvars[item]['vbmc_user'] | default('admin') }}
+    --password {{ hostvars[item]['vbmc_password'] | default('password') }}
+  args:
+    executable: /bin/bash
+  become: true
+  register: result_vbmc_create
+  retries: 10
+  delay: 2
+  until: result_vbmc_create is succeeded
+  when:
+    - hostvars[item]['inventory_hostname'] not in groups['kvmhost']
+    - hostvars[item]['virt_infra_state'] | default(virt_infra_state) != "undefined"
+    - hostvars[item]['virt_infra_vbmc_port'] is defined and hostvars[item]['virt_infra_vbmc_port']
+    - hostvars[groups["kvmhost"][0]].virt_infra_vbmc is defined and hostvars[groups["kvmhost"][0]].virt_infra_vbmc or virt_infra_vbmc
+    - hostvars[groups["kvmhost"][0]].result_vbmc_list.stdout is defined and hostvars[item]['inventory_hostname'] not in hostvars[groups["kvmhost"][0]].result_vbmc_list.stdout
+  delegate_to: "{{ groups['kvmhost'][0] }}"
+  with_items: "{{ play_hosts }}"
+  run_once: true
+  notify:
+    - restart virtual bmc
+
+- name: Start virtual BMC
+  shell: "vbmc start {{ hostvars[item]['inventory_hostname'] }}"
+  args:
+    executable: /bin/bash
+  become: true
+  register: result_vbmc_start
+  retries: 10
+  delay: 2
+  until: result_vbmc_start is succeeded
+  changed_when: false
+  when:
+    - hostvars[item]['inventory_hostname'] not in groups['kvmhost']
+    - hostvars[item]['virt_infra_state'] | default(virt_infra_state) != "undefined"
+    - hostvars[item]['virt_infra_vbmc_port'] is defined and hostvars[item]['virt_infra_vbmc_port']
+    - hostvars[groups["kvmhost"][0]].virt_infra_vbmc is defined and hostvars[groups["kvmhost"][0]].virt_infra_vbmc or virt_infra_vbmc
+  delegate_to: "{{ groups['kvmhost'][0] }}"
+  with_items: "{{ play_hosts }}"
+
+- meta: flush_handlers
