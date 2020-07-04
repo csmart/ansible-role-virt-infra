@@ -166,6 +166,59 @@
         - result_libvirtd.list_vms is not defined
       changed_when: true
 
+    # Network traffic to VMs can be blocked by bridge-nf
+    # Make sure it's loaded and disable in next task
+    # https://wiki.libvirt.org/page/Net.bridge.bridge-nf-call_and_sysctl.conf
+    - name: "KVM host only: Load br_netfilter module"
+      modprobe:
+        name: br_netfilter
+        state: present
+      register: result_modules
+      become: true
+      when:
+        - inventory_hostname in groups['kvmhost']
+      ignore_errors: true
+
+    - name: "KVM host only: Load br_netfilter module on boot"
+      lineinfile:
+        path: /etc/modules-load.d/99-br_netfilter.conf
+        line: br_netfilter
+        state: present
+        create: yes
+      register: result_module_file
+      become: true
+      when:
+        - inventory_hostname in groups['kvmhost']
+        - not result_modules.failed
+
+    - name: "KVM host only: Ensure netfilter disabled on bridge"
+      sysctl:
+        name: "{{ item }}"
+        value: "0"
+        sysctl_set: yes
+        state: present
+        reload: yes
+        sysctl_file: /etc/sysctl.d/99-sysctl.conf
+      register: result_sysctl
+      become: true
+      when:
+        - inventory_hostname in groups['kvmhost']
+        - not result_modules.failed
+      with_items:
+        - net.bridge.bridge-nf-call-ip6tables
+        - net.bridge.bridge-nf-call-iptables
+        - net.bridge.bridge-nf-call-arptables
+      ignore_errors: true
+
+    - name: "KVM host only: Advise unable to disable netfilter on bridge"
+      set_fact:
+        validations_failed: "{{ validations_failed|default([]) + ['KVM host: could not disable netfilter on bridge'] }}"
+      when:
+        - inventory_hostname in groups['kvmhost']
+        - item is failed
+      with_items: "{{ result_sysctl.results }}"
+      changed_when: true
+
     # Allow MAC access to NVMe drives when using apparmor
     # Else we get permissions denied on NVMe disk images
     - name: "KVM host only: Enable access to NVMe drives in apparmor"
