@@ -14,7 +14,7 @@
     - name: "Abort play when 'kvmhost' not specified in limits"
       assert:
         that:
-          - '"kvmhost" in ansible_limit'
+          - '"kvmhost" in ansible_limit or ansible_limit == "all"'
         fail_msg: "Specify 'kvmhost' and VMs with --limit option, e.g. --limit kvmhost,guests"
         quiet: true
       when:
