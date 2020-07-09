@@ -9,12 +9,25 @@
 
 - name: Run all the validations
   block:
-    # Either run with no limit (all) or specify limit with 'kvmhost' and guests
-    # This will fail here if we have no 'kvmhost' else we can't perform other tests
+    # The KVM host must be in the play_hosts, else we can't do anything
+    # We only know this host is defined as part of hostgroup, 'kvmhost'
+    # If --limit is not specified we run against every host, so we're fine
+    # When --limit is specified, it might be simply 'kvmhost,guest' or 'all' or even combinations, like 'all,!but-not-this-vm'
+    # Convert it to a list so we can easily check either 'kvmhost' or 'all' is there
+    # I think this is a bit cleaner than regex and should catch other combinations
+    - name: Convert --limit into a list for validation
+      set_fact:
+        limit_list: "{{ ansible_limit.split(',') }}"
+      delegate_to: "{{ groups['kvmhost'][0] }}"
+      run_once: true
+      when:
+        - ansible_limit is defined
+
+    # This will fail here if we kvmhost isn't included in list else we can't perform other tests
     - name: "Abort play when 'kvmhost' not specified in limits"
       assert:
         that:
-          - '"kvmhost" in ansible_limit or ansible_limit == "all"'
+          - '"kvmhost" in limit_list or "all" in limit_list'
         fail_msg: "Specify 'kvmhost' and VMs with --limit option, e.g. --limit kvmhost,guests"
         quiet: true
       when:
