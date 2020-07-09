@@ -3,6 +3,8 @@
   command: >
     virsh --connect {{ hostvars[groups['kvmhost'][0]].virt_infra_host_libvirt_url | default(virt_infra_host_libvirt_url) }}
     undefine {{ inventory_hostname }}
+    --managed-save
+    --snapshots-metadata
   become: true
   when:
     - inventory_hostname not in groups['kvmhost']
