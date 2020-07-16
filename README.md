@@ -9,6 +9,11 @@
 			* [Debian](#debian)
 			* [Ubuntu](#ubuntu)
 			* [openSUSE](#opensuse)
+			* [Configuring bridges with NetworkManager](#configuring-bridges-with-networkmanager)
+				* [Linux bridge](#linux-bridge)
+					* [Using Linux bridge in inventory](#using-linux-bridge-in-inventory)
+				* [Open vSwitch (OVS) bridge](#open-vswitch-ovs-bridge)
+					* [Using ovs-bridge in inventory](#using-ovs-bridge-in-inventory)
 		* [Guest Cloud images](#guest-cloud-images)
 	* [Role Variables](#role-variables)
 	* [Dependencies](#dependencies)
@@ -292,6 +297,203 @@ python3-lxml \
 qemu-tools \
 virt-install
 ```
+
+#### Configuring bridges with NetworkManager
+
+This code supports connecting VMs to both Linux and Open vSwitch bridges, but
+they must already exist on the KVM host.
+
+Here is how to convert an existing ethernet device into a bridge. Be careful if
+doing this on a remote machine with only one connection! Make sure you have
+some other way to log in (e.g. console), or maybe add additional interfaces
+instead.
+
+First, export the the device you want to convert so we can easily reference it
+later (e.g.  `eth1`).
+
+```bash
+export NET_DEV="eth1"
+```
+
+Now list the current NetworkManager connections for your device exported above
+so we know what to disable later.
+
+```bash
+sudo nmcli con |egrep -w "${NET_DEV}"
+```
+
+This might be something like `System eth1` or `Wired connection 1`, let's export
+it too for later reference.
+
+```bash
+export NM_NAME="Wired connection 1"
+```
+
+##### Linux bridge
+
+Here is an example of creating a persistent Linux bridge with NetworkManager.
+It will take a device such as `eth1` (substitute as appropriate) and convert it
+into a bridge.
+
+Remember your device's existing NetworkManager connection name from above, you
+will use it below (e.g. `Wired connection 1`).
+
+```bash
+export NET_DEV=eth1
+export NM_NAME="Wired connection 1"
+sudo nmcli con add ifname br0 type bridge con-name br0
+sudo nmcli con add type bridge-slave ifname "${NET_DEV}" master br0
+```
+
+OK now you have your bridge device! Note the bridge will have a different MAC
+address to the underlying device, so if you're expecting it to get a specific
+address, you'll need to update your DHCP static lease.
+
+```bash
+sudo ip link show dev br0
+```
+
+Disable the current NetworkManager config for the device so that it doesn't
+conflict with the bridge (don't delete it yet, you may lose connection if
+you're using it for SSH).
+
+```
+sudo nmcli con modify id "${NM_NAME}" ipv4.method disabled ipv6.method disabled
+```
+
+Now you can either simply `reboot`, or stop the current interface and bring up
+the bridge in one command. Remember that the bridge will have a new MAC address
+so it will get a new IP, unless you've updated your DHCP static leases!
+
+```bash
+sudo nmcli con down "${NM_NAME}" ; sudo nmcli con up br0
+```
+
+As mentioned above, by default the Linux bridge will get an address via DHCP.
+If you don't want it to be on the network (you might have another dedicated
+interface) then disable DHCP on it.
+
+```bash
+sudo nmcli con modify id br0 ipv4.method disabled ipv6.method disabled
+```
+
+###### Using Linux bridge in inventory
+
+There's nothing to do on the `kvmhost` side of the inventory.
+
+For any guests you want to connect to the bridge, simply specify it in their
+inventory. Use `br0` as the `name` of a network under `virt_infra_networks`
+with type `bridge`.
+
+```yaml
+      virt_infra_networks:
+        - name: br0
+          type: bridge
+```
+
+##### Open vSwitch (OVS) bridge
+
+Here is an example of creating a persistent OVS bridge with NetworkManager. It
+will take a device such as `eth1` (substitute as appropriate) and convert it
+into an ovs-bridge.
+
+You will need openvswitch installed as well as the OVS NetworkManager plugin
+(substitute for your distro).
+
+```bash
+sudo dnf install -y NetworkManager-ovs openvswitch
+sudo systemctl enable --now openvswitch
+sudo systemctl restart NetworkManager
+```
+
+Now we can create the OVS bridge (assumes your device is `eth1` and existing
+NetworkManager config is `Wired connection 1`, substitute as appropriate).
+
+```bash
+export NET_DEV=eth1
+export NM_NAME="Wired connection 1"
+sudo nmcli con add type ovs-bridge conn.interface ovs-bridge con-name ovs-bridge
+sudo nmcli con add type ovs-port conn.interface port-ovs-bridge master ovs-bridge
+sudo nmcli con add type ovs-interface slave-type ovs-port conn.interface ovs-bridge master port-ovs-bridge
+sudo nmcli con add type ovs-port conn.interface ovs-port-eth master ovs-bridge con-name ovs-port-eth
+sudo nmcli con add type ethernet conn.interface "${NET_DEV}" master ovs-port-eth con-name ovs-int-eth
+```
+
+Disable the current NetworkManager config for the device so that it doesn't
+conflict with the bridge (don't delete it yet, you may lose connection if
+you're using it for SSH).
+
+```
+sudo nmcli con modify id "${NM_NAME}" ipv4.method disabled ipv6.method disabled
+```
+
+Now you can either simply `reboot`, or stop the current interface and bring up
+the bridge in one command.
+
+```bash
+sudo nmcli con down "${NM_NAME}" ; sudo nmcli con up ovs-slave-ovs-bridge
+```
+
+By default the OVS bridge will get an address via DHCP. If you don't want it to
+be on the network (you might have another dedicated interface) then disable
+DHCP on it.
+
+```bash
+sudo nmcli con modify id ovs-slave-ovs-bridge ipv4.method disabled ipv6.method disabled
+```
+
+Show the switch config and bridge with OVS tools.
+
+```bash
+sudo ovs-vsctl show
+```
+
+###### Using ovs-bridge in inventory
+
+Now you can use `ovs-bridge` as the `device` of an `ovs` bridge in your
+`kvmhost` inventory `virt_infra_host_networks` entry and it will create the OVS
+libvirt networks for you. You can set up multiple VLANs and set one as default
+native (if required).
+
+```yaml
+      virt_infra_host_networks:
+        present:
+          - name: ovs-bridge
+            bridge_dev: ovs-bridge
+            type: ovs
+            portgroup:
+              # This is a portgroup with multiple VLANs
+              # It is native VLAN 1 and also allows traffic tagged with VLAN 99
+              - name: ovs-trunk
+                trunk: true
+                native_vlan: 1
+                vlan:
+                  - 1
+                  - 99
+              # This is portgroup just for native VLAN 1
+              - name: default
+                native_vlan: 1
+                vlan:
+                  - 1
+              # This is portgroup just for native VLAN 99
+              - name: other
+                native_vlan: 99
+                vlan:
+                  - 99
+```
+
+You can then specify your VMs to be on specific portgroups and libvirt will
+automatically set up the ports for your VMs and you.
+
+```yaml
+      virt_infra_networks:
+        - name: ovs-bridge
+          portgroup: default
+          type: ovs
+```
+
+Once your VMs are running, you can see their OVS ports with `sudo ovs-vsctl
+show`.
 
 ### Guest Cloud images
 
