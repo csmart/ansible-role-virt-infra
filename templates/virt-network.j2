@@ -13,6 +13,9 @@
     </nat>
   </forward>
   {% endif %}
+  {% if (item.mtu is defined and item.mtu) and (item.type is undefined or (item.type is defined and item.type != "ovs"))%}
+  <mtu size="{{ item.mtu }}"/>
+  {% endif %}
   {% if item.type is defined and item.type == "ovs" %}
   <virtualport type='openvswitch'/>
   <forward mode="bridge"/>
