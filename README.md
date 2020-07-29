@@ -574,10 +574,12 @@ virt_infra_ssh_pwauth: true
 #  - "bridge" type requires the bridge interface (e.g. br0) to already exist on KVM host
 #  - "ovs" type requires the OVS bridge interface (e.g. ovsbr0) to already exist on KVM host
 # "model" is also optional
+# "mtu" is also optional
 virt_infra_networks:
   - name: "default"
     type: "nat"
     model: "virtio"
+    mtu: 9000
 
 # Disk defaults, support various libvirt options
 # We generally don't set them though, and leave it to hypervisor default
@@ -616,6 +618,7 @@ virt_infra_host_image_path: "/var/lib/libvirt/images"
 # You can create and remove NAT networks on kvmhost (creating bridges not supported)
 # The 'default' network is the standard one shipped with libvirt
 # By default we don't remove any networks (empty absent list)
+# 'mtu' is optional
 virt_infra_host_networks:
   absent: []
   present:
@@ -624,6 +627,7 @@ virt_infra_host_networks:
       subnet: "255.255.255.0"
       dhcp_start: "192.168.112.2"
       dhcp_end: "192.168.112.254"
+      mtu: 9000
 
 # List of binaries to check for on kvmhost
 virt_infra_host_deps:

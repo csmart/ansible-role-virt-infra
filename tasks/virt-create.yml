@@ -38,11 +38,11 @@
     --name {{ inventory_hostname }}
     {% for network in virt_infra_networks %}
     {% if network.type is defined and network.type == "bridge" %}
-    --network bridge={{ network.name }}{% if network.model is defined and network.model %},model={{ network.model }}{% endif %}{% if network.mac is defined and network.mac %},mac={{ network.mac }}{% endif %}
+    --network bridge={{ network.name }}{% if network.model is defined and network.model %},model={{ network.model }}{% endif %}{% if network.mac is defined and network.mac %},mac={{ network.mac }}{% endif %}{% if network.mtu is defined and network.mtu %},mtu.size={{ network.mtu }}{% endif %}
     {% elif network.type is defined and network.type == "ovs" %}
-    --network network={{ network.name }},portgroup={{ network.portgroup }}{% if network.model is defined and network.model %},model={{ network.model }}{% endif %}{% if network.mac is defined and network.mac %},mac={{ network.mac }}{% endif %}
+    --network network={{ network.name }},portgroup={{ network.portgroup }}{% if network.model is defined and network.model %},model={{ network.model }}{% endif %}{% if network.mac is defined and network.mac %},mac={{ network.mac }}{% endif %}{% if network.mtu is defined and network.mtu %},mtu.size={{ network.mtu }}{% endif %}
     {% else %}
-    --network network={{ network.name }}{% if network.model is defined and network.model %},model={{ network.model }}{% endif %}{% if network.mac is defined and network.mac %},mac={{ network.mac }}{% endif %}
+    --network network={{ network.name }}{% if network.model is defined and network.model %},model={{ network.model }}{% endif %}{% if network.mac is defined and network.mac %},mac={{ network.mac }}{% endif %}{% if network.mtu is defined and network.mtu %},mtu.size={{ network.mtu }}{% endif %}
     {% endif %}
     {% endfor %}
     --noreboot
