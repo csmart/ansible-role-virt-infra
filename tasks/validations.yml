@@ -121,8 +121,8 @@
     - name: "KVM host only: Set libvirtd security driver"
       lineinfile:
         path: /etc/libvirt/qemu.conf
-        insertafter: '^#security_driver ='
-        regexp: '^security_driver ='
+        insertafter: '^#\s*security_driver\s*='
+        regexp: '^security_driver\s*='
         line: 'security_driver = "{{ virt_infra_security_driver }}"'
       register: result_qemuconf
       when:

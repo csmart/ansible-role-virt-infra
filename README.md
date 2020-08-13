@@ -510,18 +510,18 @@ I have tested the following guests successfully:
   * https://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud.qcow2
 * CentOS 8
   * https://cloud.centos.org/centos/8/x86_64/images/CentOS-8-GenericCloud-8.1.1911-20200113.3.x86_64.qcow2
-* Fedora 30
-  * https://download.fedoraproject.org/pub/fedora/linux/releases/30/Cloud/x86_64/images/Fedora-Cloud-Base-30-1.2.x86_64.qcow2
 * Fedora 31
   * https://download.fedoraproject.org/pub/fedora/linux/releases/31/Cloud/x86_64/images/Fedora-Cloud-Base-31-1.9.x86_64.qcow2
+* Fedora 32
+  * https://download.fedoraproject.org/linux/releases/32/Cloud/x86_64/images/Fedora-Cloud-Base-32-1.6.x86_64.qcow2
 * Debian 10
   * http://cdimage.debian.org/cdimage/openstack/current/debian-10.2.0-openstack-amd64.qcow2
-* Ubuntu 16.04 LTS
+* Ubuntu 18.04 LTS
   * http://cloud-images.ubuntu.com/bionic/current/bionic-server-cloudimg-amd64.img
-* Ubuntu 19.10
-  * http://cloud-images.ubuntu.com/eoan/current/eoan-server-cloudimg-amd64.img
-* openSUSE 15.1 JeOS
-  * https://download.opensuse.org/distribution/leap/15.1/jeos/openSUSE-Leap-15.1-JeOS.x86_64-15.1.0-OpenStack-Cloud-Current.qcow2
+* Ubuntu 20.04 LTS
+  * http://cloud-images.ubuntu.com/focal/current/focal-server-cloudimg-amd64.img
+* openSUSE 15.2 JeOS
+  * http://download.opensuse.org/distribution/leap/15.2/appliances/openSUSE-Leap-15.2-JeOS.x86_64-OpenStack-Cloud.qcow2
 
 So that we can configure the guest and get its IP, both cloud-init and
 qemu-guest-agent will be installed into you guest's image, just in case.
