@@ -1,6 +1,6 @@
 ---
 - name: Remove virtual BMC
-  shell: "vbmc delete {{ hostvars[item]['inventory_hostname'] }}"
+  shell: "{{ result_vbmc_path.stdout }} delete {{ hostvars[item]['inventory_hostname'] }}"
   args:
     executable: /bin/bash
   become: true

@@ -293,6 +293,16 @@
         - virt_infra_vbmc and virt_infra_vbmc_pip
       become: true
 
+    - name: "KVM host only: Find the path for virtualbmc"
+      shell: "which vbmc"
+      register: result_vbmc_path
+      when:
+        - inventory_hostname in groups['kvmhost']
+        - virt_infra_vbmc and virt_infra_vbmc_pip
+        - result_vbmc_pip is succeeded
+      run_once: true
+      changed_when: true
+
     - name: "KVM host only: Advise unable to install virtualbmc"
       set_fact:
         validations_failed: "{{ validations_failed|default([]) + ['KVM host: Failed to install virtualbmc with pip'] }}"

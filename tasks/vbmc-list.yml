@@ -1,7 +1,7 @@
 ---
 # This is only run on KVM host
 - name: Get virtual BMC list
-  shell: vbmc list -f json --noindent |sed 's/Domain name/Name/g'
+  shell: "{{ result_vbmc_path.stdout }} list -f json --noindent |sed 's/Domain name/Name/g'"
   register: result_vbmc_list
   become: true
   args:

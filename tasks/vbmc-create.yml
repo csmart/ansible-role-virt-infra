@@ -2,7 +2,7 @@
 # Create any virtual BMC interfaces
 - name: Create virtual BMC
   shell: >
-    vbmc add {{ hostvars[item]['inventory_hostname'] }}
+    {{ result_vbmc_path.stdout }} add {{ hostvars[item]['inventory_hostname'] }}
     --libvirt-uri {{ hostvars[groups['kvmhost'][0]].virt_infra_host_libvirt_url | default(virt_infra_host_libvirt_url) }}
     --port {{ hostvars[item]['virt_infra_vbmc_port'] }}
     --username {{ hostvars[item]['vbmc_user'] | default('admin') }}
@@ -27,7 +27,7 @@
     - restart virtual bmc
 
 - name: Start virtual BMC
-  shell: "vbmc start {{ hostvars[item]['inventory_hostname'] }}"
+  shell: "{{ result_vbmc_path.stdout }} start {{ hostvars[item]['inventory_hostname'] }}"
   args:
     executable: /bin/bash
   become: true
