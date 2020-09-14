@@ -294,7 +294,7 @@
       become: true
 
     - name: "KVM host only: Find the path for virtualbmc"
-      shell: "which vbmc"
+      command: "which vbmc"
       register: result_vbmc_path
       when:
         - inventory_hostname in groups['kvmhost']

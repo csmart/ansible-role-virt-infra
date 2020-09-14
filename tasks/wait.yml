@@ -20,7 +20,7 @@
   delegate_to: "{{ groups['kvmhost'][0] }}"
 
 - name: Get guest SSH fingerprints
-  shell: "ssh-keyscan {{ inventory_hostname }} {{ vm_ip }} | sort"
+  shell: "set -o pipefail && ssh-keyscan {{ inventory_hostname }} {{ vm_ip }} | sort"
   delegate_to: "{{ groups['kvmhost'][0] }}"
   register: result_keyscan
   changed_when: false

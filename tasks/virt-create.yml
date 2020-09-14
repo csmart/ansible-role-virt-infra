@@ -2,7 +2,7 @@
 # Define the VM, unless it doesn't yet exist and is set to "undefined"
 - name: Define VM
   shell: >
-    virt-install
+    set -o pipefail && virt-install
     --import
     --connect {{ hostvars[groups['kvmhost'][0]].virt_infra_host_libvirt_url | default(virt_infra_host_libvirt_url) }}
     --cpu {{ virt_infra_cpu_model }}
@@ -16,7 +16,7 @@
     {% else %}
     --disk {{ hostvars[groups['kvmhost'][0]].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-{{ disk.name }}.qcow2,serial={{ disk.name }},{% if disk.name == "boot" %}boot_order=1,{% endif %}format=qcow2,bus={{ disk.bus | default(virt_infra_disk_bus) }}{% if disk.cache is defined and disk.cache %},cache={{ disk.cache }}{% endif %}{% if disk.io is defined and disk.io %},io={{ disk.io }}{% endif %}
     {% endif %}
-    {% if (disk.bus is defined and disk.bus == "scsi" or disk.bus is undefined) and disk.ssd is defined and disk.ssd | bool == true %}
+    {% if (disk.bus is defined and disk.bus == "scsi" or disk.bus is undefined) and disk.ssd is defined and (disk.ssd | bool) is true %}
     --qemu-commandline='-set device.scsi{{ scsi_controller_count | length }}-0-0-{{ scsi_disk_count | length }}.rotation_rate=1'
     {% endif %}
     {% if disk.bus is defined and disk.bus == "scsi" or disk.bus is undefined %}

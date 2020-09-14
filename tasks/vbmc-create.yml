@@ -27,7 +27,7 @@
     - restart virtual bmc
 
 - name: Start virtual BMC
-  shell: "{{ result_vbmc_path.stdout }} start {{ hostvars[item]['inventory_hostname'] }}"
+  shell: "set -o pipefail && {{ result_vbmc_path.stdout }} start {{ hostvars[item]['inventory_hostname'] }}"
   args:
     executable: /bin/bash
   become: true
