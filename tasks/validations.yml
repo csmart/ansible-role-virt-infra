@@ -283,6 +283,7 @@
     - name: "KVM host only: Install virtualbmc with pip"
       pip:
         name: virtualbmc  {%- if virt_infra_vbmc_pip_version is defined %}=={{ virt_infra_vbmc_pip_version }}{% endif %}
+        extra_args: "--prefix /usr/local"
       register: result_vbmc_pip
       ignore_errors: yes
       retries: 30
@@ -298,9 +299,17 @@
       register: result_vbmc_path
       when:
         - inventory_hostname in groups['kvmhost']
-        - virt_infra_vbmc and virt_infra_vbmc_pip
-        - result_vbmc_pip is succeeded
-      run_once: true
+        - virt_infra_vbmc
+      changed_when: false
+      ignore_errors: yes
+
+    - name: "KVM host only: Advise unable to find virtualbmc"
+      set_fact:
+        validations_failed: "{{ validations_failed|default([]) + ['KVM host: Cannot find vbmc binary, is it installed?'] }}"
+      when:
+        - inventory_hostname in groups['kvmhost']
+        - virt_infra_vbmc
+        - result_vbmc_path.failed is defined and result_vbmc_path.failed
       changed_when: true
 
     - name: "KVM host only: Advise unable to install virtualbmc"
@@ -369,11 +378,12 @@
     - name: "KVM host only: Ensure virtualbmc is running"
       systemd:
         name: "{{ virt_infra_vbmc_service }}"
-        state: started
+        state: restarted
         daemon_reload: yes
         enabled: yes
       register: result_virtualbmc
       ignore_errors: yes
+      changed_when: false
       when:
         - inventory_hostname in groups['kvmhost']
         - virt_infra_vbmc
@@ -385,7 +395,7 @@
       when:
         - inventory_hostname in groups['kvmhost']
         - virt_infra_vbmc
-        - result_virtualbmc.failed is defined and result_virtualbmc.failed
+        - result_virtualbmc.status.ActiveState is defined and result_virtualbmc.status.ActiveState == "failed"
       changed_when: true
 
     - name: "KVM host only: Get virtual BMC list"
@@ -523,7 +533,7 @@
         - inventory_hostname not in groups['kvmhost']
         - hostvars[groups['kvmhost'][0]].result_osinfo.stdout is defined
         - virt_infra_variant is defined
-        - virt_infra_variant not in hostvars[groups['kvmhost'][0]].result_osinfo.stdout
+        - hostvars[groups['kvmhost'][0]].result_osinfo.stdout is not search(virt_infra_variant + " ")
       changed_when: true
 
     - name: "Guests: Check that existing vbmc port and name match"

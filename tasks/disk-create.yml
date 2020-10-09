@@ -52,6 +52,9 @@
     owner: "{{ hostvars[groups['kvmhost'][0]].virt_infra_host_image_owner | default('root') }}"
     group: "{{ hostvars[groups['kvmhost'][0]].virt_infra_host_image_group | default('qemu') }}"
     mode: "{{ hostvars[groups['kvmhost'][0]].virt_infra_host_image_mode | default('0660') }}"
+    seuser: system_u
+    serole: object_r
+    setype: svirt_image_t
   become: true
   when:
     - inventory_hostname not in groups['kvmhost']

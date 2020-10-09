@@ -14,5 +14,6 @@ virt_infra_host_pkgs_deps:
   - python3-pip
   - qemu-tools
   - virt-install
+  - which
 
 virt_infra_mkiso_cmd: mkisofs

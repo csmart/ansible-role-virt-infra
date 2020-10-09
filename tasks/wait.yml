@@ -21,6 +21,8 @@
 
 - name: Get guest SSH fingerprints
   shell: "set -o pipefail && ssh-keyscan {{ inventory_hostname }} {{ vm_ip }} | sort"
+  args:
+    executable: /bin/bash
   delegate_to: "{{ groups['kvmhost'][0] }}"
   register: result_keyscan
   changed_when: false
