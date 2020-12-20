@@ -9,6 +9,7 @@
 			* [Debian](#debian)
 			* [Ubuntu](#ubuntu)
 			* [openSUSE](#opensuse)
+			* [Configuring bridges automatically](#configuring-bridges-automatically)
 			* [Configuring bridges with NetworkManager](#configuring-bridges-with-networkmanager)
 				* [Linux bridge](#linux-bridge)
 					* [Using Linux bridge in inventory](#using-linux-bridge-in-inventory)
@@ -50,6 +51,11 @@ any number of them. Guests can use those libvirt networks or _existing_ bridge
 devices (e.g. br0) and Open vSwitch (OVS) bridge on the KVM host (this won't
 create bridges on the host, but it will check that the bridge interface
 exists). You can specify the MAC for each interface if you require.
+
+You can also create routed libvirt networks on the KVM host and then put VMs on
+any number of them. In this case, a new bridge is created with the name you
+specify (e.g. br1), wired to an _existing_ interface (e.g. eth0). You can
+specify the MAC for each interface if you require.
 
 This supports various distros and uses their qcow2 [cloud
 images](#guest-cloud-images) for convenience (although you could use your own
@@ -296,6 +302,39 @@ python3-libvirt-python \
 python3-lxml \
 qemu-tools \
 virt-install
+```
+
+#### Configuring bridges automatically
+
+Creation of a network bridge is supported when _type: route_ is specified. You also
+need to specify parameters _route_dev_ and_bridge_dev_.
+
+The example below shows how a bridge can be created, supporting both IPv4 and IPv6:
+
+```yaml
+kvmhost:
+  hosts:
+    localhost:
+      ansible_connection: local
+      ansible_python_interpreter: /usr/bin/python3
+      virt_infra_host_libvirt_url: qemu:///system
+  vars:
+    virt_infra_host_networks:
+      present:
+        - name: example
+          domain: f901.example.com
+          type: route
+          route_dev: eth0
+          bridge_dev: virbr1
+          mac: 52:54:00:f9:01:00
+          ip_address: 10.249.1.1
+          ip_netmask: 255.255.255.0
+          dhcp_start: 10.249.1.11
+          dhcp_end: 10.249.1.254
+          ip6_address: 2001:0db8::f901:1
+          ip6_prefix: 64
+          dhcp6_start: 2001:0db8::f901:0000
+          dhcp6_end: 2001:0db8::f901:00ff
 ```
 
 #### Configuring bridges with NetworkManager
