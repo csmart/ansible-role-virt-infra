@@ -19,6 +19,9 @@
     <interface dev='{{ item.host_dev }}'/>
   {% endif %}
   </forward>
+  {% if item.bridge_dev is defined and item.bridge_dev %}
+  <bridge name="{{ item.bridge_dev }}" stp="on" delay="0"/>
+  {% endif %}
   {% endif %}
   {% if (item.mtu is defined and item.mtu) and (item.type is undefined or (item.type is defined and item.type != "ovs"))%}
   <mtu size="{{ item.mtu }}"/>
