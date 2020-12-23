@@ -111,10 +111,10 @@ virt_infra_host_networks:
   present:
     - name: "default"
       type: "nat"
-      ip_address: "192.168.112.1"
+      ip_address: "192.168.122.1"
       subnet: "255.255.255.0"
-      dhcp_start: "192.168.112.2"
-      dhcp_end: "192.168.112.254"
+      dhcp_start: "192.168.122.2"
+      dhcp_end: "192.168.122.254"
 
 # Command for creating ISO images
 virt_infra_mkiso_cmd: genisoimage

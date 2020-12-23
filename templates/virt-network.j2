@@ -14,8 +14,10 @@
   </forward>
   {% endif %}
   {% if (item.type is defined and item.type == "route") and item.ip_address is defined and item.ip_address %}
-  <forward mode='route'{% if item.route_dev is defined and item.route_dev %} dev='{{ item.route_dev }}'{% endif %}>
-    <interface dev='{{ item.route_dev }}'/>
+  <forward mode='route'{% if item.host_dev is defined and item.host_dev %} dev='{{ item.host_dev }}'{% endif %}>
+  {% if item.host_dev is defined and item.host_dev %}
+    <interface dev='{{ item.host_dev }}'/>
+  {% endif %}
   </forward>
   {% endif %}
   {% if (item.mtu is defined and item.mtu) and (item.type is undefined or (item.type is defined and item.type != "ovs"))%}

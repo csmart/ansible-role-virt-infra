@@ -9,7 +9,7 @@
 			* [Debian](#debian)
 			* [Ubuntu](#ubuntu)
 			* [openSUSE](#opensuse)
-			* [Configuring bridges automatically](#configuring-bridges-automatically)
+			* [Using routed networks](#using-routed-networks)
 			* [Configuring bridges with NetworkManager](#configuring-bridges-with-networkmanager)
 				* [Linux bridge](#linux-bridge)
 					* [Using Linux bridge in inventory](#using-linux-bridge-in-inventory)
@@ -304,10 +304,11 @@ qemu-tools \
 virt-install
 ```
 
-#### Configuring bridges automatically
+#### Using routed networks
 
-Creation of a network bridge is supported when _type: route_ is specified. You also
-need to specify parameters _route_dev_ and_bridge_dev_.
+You can route traffic into a newly created bridge by specifying forward *type: route*.
+This code supports automatic creation of a new bridge named *bridge_dev* which will be
+wired onto an existing interface in the host, specified by parameter *host_dev*.
 
 The example below shows how a bridge can be created, supporting both IPv4 and IPv6:
 
@@ -324,7 +325,7 @@ kvmhost:
         - name: example
           domain: f901.example.com
           type: route
-          route_dev: eth0
+          host_dev: eth0
           bridge_dev: virbr1
           mac: 52:54:00:f9:01:00
           ip_address: 10.249.1.1
@@ -336,6 +337,16 @@ kvmhost:
           dhcp6_start: 2001:0db8::f901:0000
           dhcp6_end: 2001:0db8::f901:00ff
 ```
+
+Notes:
+
+1. The IPv6 block 2001:0db8/32 as shown above is provided for the sake of documentation
+   purposes only. You will have to substitute that by your own delegated /48 block
+   (in general) given to you by your IPv6 provider or by a IPv6 over IPv4 tunnelling
+   solution such as [Hurricane Electric's tunnel broker service](http://tunnelbroker.net/).
+
+2. It's highly recommended that you stick with *ip6_prefix: 64*, since it is the
+   recommended setting in Libvirt documentation.
 
 #### Configuring bridges with NetworkManager
 
