@@ -7,7 +7,7 @@
   <domain name="{{ item.domain }}"/>
   {% endif %}
   {% if (item.type is undefined or (item.type is defined and item.type == "nat")) and item.ip_address is defined and item.ip_address %}
-  <forward mode='nat'{% if item.nat_dev is defined and item.nat_dev %} dev='{{ item.nat_dev }}'{% endif %}>
+  <forward mode='nat'{% if (item.host_dev is defined and item.host_dev) or (item.nat_dev is defined and item.nat_dev) %} dev='{{ item.host_dev | default(item.nat_dev) }}'{% endif %}>
     <nat>
       <port start='1024' end='65535'/>
     </nat>
