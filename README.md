@@ -327,6 +327,8 @@ kvmhost:
           type: route
           host_dev: eth0
           bridge_dev: virbr1
+          bridge_stp: on
+          bridge_delay: 0
           mac: 52:54:00:f9:01:00
           ip_address: 10.249.1.1
           ip_netmask: 255.255.255.0
@@ -815,6 +817,7 @@ example:
         bus: "sata"
     virt_infra_networks:
       - name: "example"
+        type: nat
         mac: 52:54:00:aa:bb:cc
 ```
 

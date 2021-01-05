@@ -19,9 +19,6 @@
     <interface dev='{{ item.host_dev }}'/>
   {% endif %}
   </forward>
-  {% if item.bridge_dev is defined and item.bridge_dev %}
-  <bridge name="{{ item.bridge_dev }}" stp="on" delay="0"/>
-  {% endif %}
   {% endif %}
   {% if (item.mtu is defined and item.mtu) and (item.type is undefined or (item.type is defined and item.type != "ovs"))%}
   <mtu size="{{ item.mtu }}"/>
@@ -29,9 +26,6 @@
   {% if item.type is defined and item.type == "ovs" %}
   <virtualport type='openvswitch'/>
   <forward mode="bridge"/>
-  {% if item.bridge_dev is defined and item.bridge_dev %}
-  <bridge name="{{ item.bridge_dev }}"/>
-  {% endif %}
   {% if item.portgroup is defined and item.portgroup %}
   {% for group in item.portgroup %}
   <portgroup name="{{ group.name }}">
@@ -45,6 +39,9 @@
   </portgroup>
   {% endfor %}
   {% endif %}
+  {% endif %}
+  {% if item.bridge_dev is defined and item.bridge_dev %}
+  <bridge name="{{ item.bridge_dev }}" {% if item.bridge_stp is defined and item.bridge_stp %}stp="{{ item.bridge_stp }}"{% endif %} {% if item.bridge_delay is defined and item.bridge_delay %}delay="{{ item.bridge_delay }}"{% endif %}/>
   {% endif %}
   {% if item.ip_address is defined and item.ip_address %}
   <ip address='{{ item.ip_address | default("192.168.122.1") }}' netmask='{{ item.subnet | default("255.255.255.0") }}'>
