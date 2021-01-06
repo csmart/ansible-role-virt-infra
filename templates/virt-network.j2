@@ -1,4 +1,4 @@
-<network>
+<network{% if item.ip6_address is defined and item.ip6_address %} ipv6='yes'{% endif %}>
   <name>{{ item.name | default("default") }}</name>
   {% if item.type is defined and item.type != "ovs" %}
   <mac address='{{ item.mac | default("52:54:00" | random_mac) }}'/>
@@ -7,10 +7,17 @@
   <domain name="{{ item.domain }}"/>
   {% endif %}
   {% if (item.type is undefined or (item.type is defined and item.type == "nat")) and item.ip_address is defined and item.ip_address %}
-  <forward mode='nat'{% if item.nat_dev is defined and item.nat_dev %} dev='{{ item.nat_dev }}'{% endif %}>
+  <forward mode='nat'{% if (item.host_dev is defined and item.host_dev) or (item.nat_dev is defined and item.nat_dev) %} dev='{{ item.host_dev | default(item.nat_dev) }}'{% endif %}>
     <nat>
       <port start='1024' end='65535'/>
     </nat>
+  </forward>
+  {% endif %}
+  {% if (item.type is defined and item.type == "route") and item.ip_address is defined and item.ip_address %}
+  <forward mode='route'{% if item.host_dev is defined and item.host_dev %} dev='{{ item.host_dev }}'{% endif %}>
+  {% if item.host_dev is defined and item.host_dev %}
+    <interface dev='{{ item.host_dev }}'/>
+  {% endif %}
   </forward>
   {% endif %}
   {% if (item.mtu is defined and item.mtu) and (item.type is undefined or (item.type is defined and item.type != "ovs"))%}
@@ -19,9 +26,6 @@
   {% if item.type is defined and item.type == "ovs" %}
   <virtualport type='openvswitch'/>
   <forward mode="bridge"/>
-  {% if item.bridge_dev is defined and item.bridge_dev %}
-  <bridge name="{{ item.bridge_dev }}"/>
-  {% endif %}
   {% if item.portgroup is defined and item.portgroup %}
   {% for group in item.portgroup %}
   <portgroup name="{{ group.name }}">
@@ -36,6 +40,9 @@
   {% endfor %}
   {% endif %}
   {% endif %}
+  {% if item.bridge_dev is defined and item.bridge_dev %}
+  <bridge name="{{ item.bridge_dev }}" {% if item.bridge_stp is defined and item.bridge_stp %}stp="{{ item.bridge_stp }}"{% endif %} {% if item.bridge_delay is defined and item.bridge_delay %}delay="{{ item.bridge_delay }}"{% endif %}/>
+  {% endif %}
   {% if item.ip_address is defined and item.ip_address %}
   <ip address='{{ item.ip_address | default("192.168.122.1") }}' netmask='{{ item.subnet | default("255.255.255.0") }}'>
     {% if item.dhcp_start is defined and item.dhcp_start and item.dhcp_end is defined and item.dhcp_end %}
@@ -43,6 +50,13 @@
       <range start='{{ item.dhcp_start |default("192.168.122.2") }}' end='{{ item.dhcp_end |default("192.168.122.254") }}'/>
     </dhcp>
     {% endif %}
+  </ip>
+  {% endif %}
+  {% if item.ip6_address is defined and item.ip6_address %}
+  <ip family='ipv6' address='{{ item.ip6_address }}' prefix='{{ item.ip6_prefix }}'>
+    <dhcp>
+      <range start='{{ item.dhcp6_start }}' end='{{ item.dhcp6_end }}'/>
+    </dhcp>
   </ip>
   {% endif %}
 </network>
