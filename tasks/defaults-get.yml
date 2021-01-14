@@ -9,7 +9,7 @@
 # These are only used if no keys are specified
 - name: Find SSH public keys on KVM host for cloud-init if none specified
   find:
-    paths: "{{ lookup('env','HOME') }}/.ssh/"
+    paths: "{{ ansible_env.HOME }}/.ssh/"
     patterns: '*.pub'
   register: result_ssh_key_list
   changed_when: false
@@ -37,7 +37,7 @@
 # If no SSH keys found or specified, we create one, which requires ~/.ssh dir to exist
 - name: Ensure SSH dir exists if no SSH keys found or specified
   file:
-    path: "{{ lookup('env','HOME') }}/.ssh"
+    path: "{{ ansible_env.HOME }}/.ssh"
     state: directory
   when:
     - inventory_hostname in groups['kvmhost']
@@ -46,7 +46,7 @@
 
 - name: Create SSH keypair if none found or specified
   openssh_keypair:
-    path: "{{ lookup('env','HOME') }}/.ssh/id_{{ virt_infra_ssh_key_type | default('rsa') }}-virt-infra-ansible"
+    path: "{{ ansible_env.HOME }}/.ssh/id_{{ virt_infra_ssh_key_type | default('rsa') }}-virt-infra-ansible"
     size: "{{ virt_infra_ssh_key_size }}"
     type: "{{ virt_infra_ssh_key_type }}"
     state: present

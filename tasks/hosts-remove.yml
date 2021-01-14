@@ -23,7 +23,7 @@
     create: true
     mode: 0600
     state: absent
-    path: "{{ lookup('env','HOME') }}/.ssh/known_hosts"
+    path: "{{ hostvars[groups['kvmhost'][0]].ansible_env.HOME }}/.ssh/known_hosts"
     marker: "# {mark} {{ hostvars[item]['inventory_hostname'] }} managed by virt_infra Ansible playbook"
   become: false
   delegate_to: "{{ groups['kvmhost'][0] }}"
@@ -37,7 +37,7 @@
     create: true
     mode: 0600
     state: absent
-    path: "{{ lookup('env','HOME') }}/.ssh/config"
+    path: "{{ hostvars[groups['kvmhost'][0]].ansible_env.HOME }}/.ssh/config"
     marker: "# {mark} {{ hostvars[item]['inventory_hostname'] }} managed by virt_infra Ansible playbook"
   become: false
   delegate_to: "{{ groups['kvmhost'][0] }}"

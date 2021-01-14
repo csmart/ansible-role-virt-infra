@@ -5,6 +5,7 @@
 # Or run this once only on one host with a look for all other hosts
 # Because serial is messy, I'm doing the latter
 # Thus, while this should be run against the kvmhost host, it will show one of your guests
+
 - name: Update /etc/hosts to resolve new VMs
   blockinfile:
     path: /etc/hosts
@@ -25,12 +26,12 @@
     create: true
     mode: 0600
     state: present
-    path: "{{ lookup('env','HOME') }}/.ssh/config"
+    path: "{{ hostvars[groups['kvmhost'][0]].ansible_env.HOME }}/.ssh/config"
     marker: "# {mark} {{ hostvars[item]['inventory_hostname'] }} managed by virt_infra Ansible playbook"
     block: |-
       Host {{ hostvars[item]['vm_ip'] }} {{ hostvars[item]['inventory_hostname'] }}
         Hostname  {{ hostvars[item]['vm_ip'] }}
-        User {{ hostvars[item]['virt_infra_user'] | default(lookup('env', 'USER' )) }}
+        User {{ hostvars[item]['virt_infra_user'] | default(hostvars[groups['kvmhost'][0]].ansible_env.USER) }}
       {% if hostvars[item]['virt_infra_ssh_keys'] is not defined %}
       {% if hostvars[groups['kvmhost'][0]].result_ssh_key_list.files is defined and hostvars[groups['kvmhost'][0]].result_ssh_key_list.files %}
       {% for file in hostvars[groups['kvmhost'][0]].result_ssh_key_list.files %}
