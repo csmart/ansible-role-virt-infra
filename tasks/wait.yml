@@ -35,7 +35,7 @@
     create: true
     mode: 0600
     state: present
-    path: "{{ lookup('env','HOME') }}/.ssh/known_hosts"
+    path: "{{ hostvars[groups['kvmhost'][0]]['ansible_user_dir'] }}/.ssh/known_hosts"
     marker: "# {mark} {{ hostvars[item]['inventory_hostname'] }} managed by virt_infra Ansible playbook"
     block: |-
       {{ hostvars[item]['result_keyscan']['stdout'] }}
@@ -46,10 +46,3 @@
     - hostvars[item]['virt_infra_state'] | default(virt_infra_state) == "running"
   with_items: "{{ play_hosts }}"
   run_once: true
-
-- name: Wait for cloud-init to finish
-  wait_for:
-    path: /etc/cloud/cloud-init.disabled
-  when:
-    - inventory_hostname not in groups['kvmhost']
-    - virt_infra_state == "running"
