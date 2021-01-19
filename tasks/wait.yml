@@ -16,7 +16,7 @@
     timeout: 600
   when:
     - inventory_hostname not in groups['kvmhost']
-    - virt_infra_state == "running"
+    - virt_infra_state is defined and virt_infra_state == "running"
   delegate_to: "{{ groups['kvmhost'][0] }}"
 
 - name: Get guest SSH fingerprints
@@ -28,7 +28,7 @@
   changed_when: false
   when:
     - inventory_hostname not in groups['kvmhost']
-    - virt_infra_state == "running"
+    - virt_infra_state is defined and virt_infra_state == "running"
 
 - name: Add guest fingerprint to SSH known_hosts
   blockinfile:
