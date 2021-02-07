@@ -16,7 +16,7 @@
     timeout: 600
   when:
     - inventory_hostname not in groups['kvmhost']
-    - virt_infra_state == "running"
+    - virt_infra_state is defined and virt_infra_state == "running"
   delegate_to: "{{ groups['kvmhost'][0] }}"
 
 - name: Get guest SSH fingerprints
@@ -28,14 +28,14 @@
   changed_when: false
   when:
     - inventory_hostname not in groups['kvmhost']
-    - virt_infra_state == "running"
+    - virt_infra_state is defined and virt_infra_state == "running"
 
 - name: Add guest fingerprint to SSH known_hosts
   blockinfile:
     create: true
     mode: 0600
     state: present
-    path: "{{ lookup('env','HOME') }}/.ssh/known_hosts"
+    path: "{{ hostvars[groups['kvmhost'][0]].ansible_env.HOME }}/.ssh/known_hosts"
     marker: "# {mark} {{ hostvars[item]['inventory_hostname'] }} managed by virt_infra Ansible playbook"
     block: |-
       {{ hostvars[item]['result_keyscan']['stdout'] }}
@@ -47,9 +47,15 @@
   with_items: "{{ play_hosts }}"
   run_once: true
 
+# This is not using wait_for module with path option anymore because it doesn't
+# work when kvmhost is remote
 - name: Wait for cloud-init to finish
-  wait_for:
-    path: /etc/cloud/cloud-init.disabled
+  shell: ssh {{ inventory_hostname }} stat /etc/cloud/cloud-init.disabled
+  register: result_wait_cloudinit
+  retries: 60
+  delay: 2
+  until: result_wait_cloudinit is succeeded
+  delegate_to: "{{ groups['kvmhost'][0] }}"
   when:
     - inventory_hostname not in groups['kvmhost']
     - virt_infra_state == "running"
