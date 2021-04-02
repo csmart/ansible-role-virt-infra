@@ -149,7 +149,7 @@
     - not result_stat_boot.stat.exists or (result_stat_boot.stat.exists and (keep_boot is not defined or keep_boot is defined and not keep_boot))
   delegate_to: "{{ groups['kvmhost'][0] }}"
 
-- name: Install cloud-init and qemu-guest-agent in guest disk
+- name: Install required packages into guest disk
   command: >
     virt-customize
     -a {{ hostvars[groups['kvmhost'][0]].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-boot.qcow2
@@ -158,7 +158,7 @@
     --sm-credentials {{ virt_infra_sm_creds }}
     --sm-attach {{ virt_infra_sm_attach | default("auto") }}
     {% endif %}
-    --install qemu-guest-agent,cloud-init
+    --install {{ virt_infra_guest_deps | join(',') }}
   register: result_disk_deps
   retries: 10
   delay: 2
@@ -168,6 +168,7 @@
     - inventory_hostname not in groups['kvmhost']
     - inventory_hostname not in hostvars[groups['kvmhost'][0]].result_all_vms.list_vms
     - virt_infra_state != "undefined"
+    - virt_infra_guest_deps is defined and virt_infra_guest_deps
     - not result_stat_boot.stat.exists or (result_stat_boot.stat.exists and (keep_boot is not defined or keep_boot is defined and not keep_boot))
     - not ((virt_infra_variant is defined and 'rhel' in virt_infra_variant) and (virt_infra_sm_creds is undefined or virt_infra_sm_creds is defined and not virt_infra_sm_creds))
   delegate_to: "{{ groups['kvmhost'][0] }}"

@@ -1,0 +1,17 @@
+---
+# RHEL specific vars
+virt_infra_host_pkgs_kvm:
+  - "@virtualization-hypervisor"
+
+virt_infra_host_pkgs_deps:
+  - genisoimage
+  - libguestfs-tools-c
+  - libosinfo
+  - python3
+  - python3-libvirt
+  - python3-lxml
+  - python3-pip
+  - qemu-img
+  - virt-install
+
+virt_infra_security_driver: selinux

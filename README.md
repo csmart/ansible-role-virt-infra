@@ -578,6 +578,9 @@ I have tested the following guests successfully:
 So that we can configure the guest and get its IP, both cloud-init and
 qemu-guest-agent will be installed into you guest's image, just in case.
 
+This can be changed or overridden using the `virt_infra_guest_deps` variable,
+which is a list.
+
 Sysprep is also run on the guest image to make sure it's clean of things like
 old MAC addresses.
 
@@ -688,6 +691,11 @@ virt_infra_host_deps:
   - virsh
   - virt-customize
   - virt-sysprep
+
+# List of packages to install into guest image
+virt_infra_guest_deps:
+  - cloud-init
+  - qemu-guest-agent
 ```
 
 ## Dependencies

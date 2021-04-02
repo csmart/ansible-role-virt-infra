@@ -126,3 +126,8 @@ virt_infra_host_deps:
   - virsh
   - virt-customize
   - virt-sysprep
+
+# Comma separated list of packages to install into guest disks
+virt_infra_guest_deps:
+  - cloud-init
+  - qemu-guest-agent
