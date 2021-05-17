@@ -25,14 +25,16 @@
     - item.name == "boot"
     - item.keep is defined and item.keep
 
-- name: Create disks for VM
+- name: Create boot disk for VM
   command: >
-    qemu-img create -f qcow2
-    {% if item.name == 'boot' %}
-    -b {{ hostvars[groups['kvmhost'][0]].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ virt_infra_distro_image }} -F qcow2
+    qemu-img
+    {% if item.clone is defined and item.clone %}
+    convert -f qcow2 -O qcow2
+    {% else %}
+    create -f qcow2 -F qcow2 -b
     {% endif %}
+    {{ hostvars[groups['kvmhost'][0]].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ virt_infra_distro_image }}
     {{ hostvars[groups['kvmhost'][0]].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-{{ item.name }}.qcow2
-    {{ item.size | default(virt_infra_disk_size) }}G
   args:
     creates: "{{ hostvars[groups['kvmhost'][0]].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-{{ item.name }}.qcow2"
   register: result_disk_create
@@ -41,6 +43,41 @@
     - inventory_hostname not in groups['kvmhost']
     - inventory_hostname not in hostvars[groups['kvmhost'][0]].result_all_vms.list_vms
     - virt_infra_state != "undefined"
+    - item.name == "boot"
+  delegate_to: "{{ groups['kvmhost'][0] }}"
+  with_items: "{{ virt_infra_disks }}"
+
+- name: Resize boot disk for VM
+  command: >
+    qemu-img
+    resize
+    {{ hostvars[groups['kvmhost'][0]].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-{{ item.name }}.qcow2
+    {{ item.size | default(virt_infra_disk_size) }}G
+  register: result_disk_resize
+  become: true
+  when:
+    - inventory_hostname not in groups['kvmhost']
+    - inventory_hostname not in hostvars[groups['kvmhost'][0]].result_all_vms.list_vms
+    - virt_infra_state != "undefined"
+    - item.name == "boot"
+    - item.size is defined
+  delegate_to: "{{ groups['kvmhost'][0] }}"
+  with_items: "{{ virt_infra_disks }}"
+
+- name: Create additional disks for VM
+  command: >
+    qemu-img create -f qcow2
+    {{ hostvars[groups['kvmhost'][0]].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-{{ item.name }}.qcow2
+    {{ item.size | default(virt_infra_disk_size) }}G
+  args:
+    creates: "{{ hostvars[groups['kvmhost'][0]].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-{{ item.name }}.qcow2"
+  register: result_disks_create
+  become: true
+  when:
+    - inventory_hostname not in groups['kvmhost']
+    - inventory_hostname not in hostvars[groups['kvmhost'][0]].result_all_vms.list_vms
+    - virt_infra_state != "undefined"
+    - item.name != "boot"
   delegate_to: "{{ groups['kvmhost'][0] }}"
   with_items: "{{ virt_infra_disks }}"
 
