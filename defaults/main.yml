@@ -38,6 +38,9 @@ virt_infra_ssh_key_type: "rsa"
 # Whether to enable SSH password auth
 virt_infra_ssh_pwauth: true
 
+# Whether to use cloud-init to configure networking on guest
+virt_infra_network_config: false
+
 # Networks are a list, you can add more than one
 # "type" is optional, both "nat" and "bridge" are supported
 #  - "nat" is default type and should be a libvirt network
