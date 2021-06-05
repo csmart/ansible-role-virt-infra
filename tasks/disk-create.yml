@@ -60,7 +60,6 @@
     - inventory_hostname not in hostvars[groups['kvmhost'][0]].result_all_vms.list_vms
     - virt_infra_state != "undefined"
     - item.name == "boot"
-    - item.size is defined
   delegate_to: "{{ groups['kvmhost'][0] }}"
   with_items: "{{ virt_infra_disks }}"
 
