@@ -543,7 +543,7 @@
         - inventory_hostname not in groups['kvmhost']
         - virt_infra_vbmc_port is defined
         - hostvars[groups['kvmhost'][0]].result_vbmc_list.stdout is defined and hostvars[groups['kvmhost'][0]].result_vbmc_list.stdout
-        - item.Name == inventory_hostname and item.Port != virt_infra_vbmc_port
+        - item.Name == inventory_hostname and item.Port |string != virt_infra_vbmc_port |string
       with_items: "{{ hostvars[groups['kvmhost'][0]].result_vbmc_list.stdout }}"
       changed_when: true
 
