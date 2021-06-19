@@ -6,13 +6,14 @@
 # Only remove disks if the guest is not running and it's set to undefined
 - name: Remove guest disks
   file:
-    path: "{{ hostvars[groups['kvmhost'][0]].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-{{ item.name }}.qcow2"
+    path: "{{ hostvars[groups['kvmhost'][0]].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-{{ item.name }}.{{ item.format | default('qcow2') }}"
     state: absent
   become: true
   when:
     - inventory_hostname not in groups['kvmhost']
     - inventory_hostname not in hostvars[groups['kvmhost'][0]].result_running_vms.list_vms
     - item.keep is not defined or item.keep is defined and not item.keep
+    - item.shared is not defined or item.shared is defined and not item.shared
     - virt_infra_state == "undefined"
   delegate_to: "{{ groups['kvmhost'][0] }}"
   with_items: "{{ virt_infra_disks }}"

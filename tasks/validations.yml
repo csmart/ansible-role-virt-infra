@@ -237,7 +237,7 @@
     - name: "KVM host only: Enable access to NVMe drives in apparmor"
       lineinfile:
         path: /etc/apparmor.d/abstractions/libvirt-qemu
-        line: '  /var/lib/libvirt/images/*nvme.qcow2 rwk,'
+        line: '  /var/lib/libvirt/images/*nvme* rwk,'
       register: result_apparmor_conf
       when:
         - inventory_hostname in groups['kvmhost']

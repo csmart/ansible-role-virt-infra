@@ -11,10 +11,10 @@
     {% set scsi_controller_count = [] %}
     {% for disk in virt_infra_disks %}
     {% if disk.bus is defined and disk.bus == "nvme" %}
-    --qemu-commandline='-drive file={{ hostvars[groups['kvmhost'][0]].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-{{ disk.name }}.qcow2,format=qcow2,if=none,id={{ disk.name | upper }}'
+    --qemu-commandline='-drive file={{ hostvars[groups['kvmhost'][0]].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-{{ disk.name }}.{{ disk.format | default('qcow2') }},format={{ disk.format | default('qcow2') }},if=none,id={{ disk.name | upper }}'
     --qemu-commandline='-device nvme,drive={{ disk.name | upper }},serial={{ disk.name }}'
     {% else %}
-    --disk {{ hostvars[groups['kvmhost'][0]].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-{{ disk.name }}.qcow2,serial={{ disk.name }},{% if disk.name == "boot" %}boot_order=1,{% endif %}format=qcow2,bus={{ disk.bus | default(virt_infra_disk_bus) }}{% if disk.cache is defined and disk.cache %},cache={{ disk.cache }}{% endif %}{% if disk.io is defined and disk.io %},io={{ disk.io }}{% endif %}
+    --disk {{ hostvars[groups['kvmhost'][0]].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{% if disk.shared is defined and disk.shared %}shared-{{ disk.name }}.raw{% else %}{{ inventory_hostname }}-{{ disk.name }}.{{ disk.format | default('qcow2') }}{% endif %},serial={{ disk.name }},{% if disk.name == "boot" %}boot_order=1,{% endif %}format={% if disk.shared is defined and disk.shared %}raw{% else %}{{ disk.format | default('qcow2') }}{% endif %},bus={{ disk.bus | default(virt_infra_disk_bus) }}{% if disk.cache is defined and disk.cache %},cache={{ disk.cache }}{% endif %}{% if disk.io is defined and disk.io %},io={{ disk.io }}{% endif %}{% if disk.shared is defined and disk.shared %},perms=sh{% endif %}
     {% endif %}
     {% if (disk.bus is defined and disk.bus == "scsi" or disk.bus is undefined) and ( disk.ssd is defined and disk.ssd ) %}
     --qemu-commandline='-set device.scsi{{ scsi_controller_count | length }}-0-0-{{ scsi_disk_count | length }}.rotation_rate=1'
