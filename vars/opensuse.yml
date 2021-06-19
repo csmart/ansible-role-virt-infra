@@ -11,6 +11,7 @@ virt_infra_host_pkgs_deps:
   - mkisofs
   - python3-libvirt-python
   - python3-lxml
+  - python3-netaddr
   - python3-pip
   - qemu-tools
   - virt-install

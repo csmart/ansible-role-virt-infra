@@ -137,12 +137,26 @@
     - virt_infra_state != "undefined"
   delegate_to: "{{ groups['kvmhost'][0] }}"
 
+- name: Create cloud init network-config for guest
+  template:
+    src: templates/network-config.j2
+    dest: "{{ result_tempdir.path }}/network-config"
+    mode: '0644'
+  become: true
+  when:
+    - inventory_hostname not in groups['kvmhost']
+    - inventory_hostname not in hostvars[groups['kvmhost'][0]].result_all_vms.list_vms
+    - virt_infra_state != "undefined"
+    - virt_infra_network_config is defined and virt_infra_network_config
+  delegate_to: "{{ groups['kvmhost'][0] }}"
+
 - name: Make cloud-init iso for guest
   shell: >
     {{ hostvars[groups['kvmhost'][0]].virt_infra_mkiso_cmd | default(virt_infra_mkiso_cmd) }} -J -l -R -V "cidata" -iso-level 4
     -o {{ hostvars[groups['kvmhost'][0]].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-cloudinit.iso
     {{ result_tempdir.path }}/user-data
     {{ result_tempdir.path }}/meta-data
+    {% if virt_infra_network_config is defined and virt_infra_network_config %}{{ result_tempdir.path }}/network-config{% endif %}
   args:
     creates: "{{ hostvars[groups['kvmhost'][0]].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-cloudinit.iso"
     executable: /bin/bash

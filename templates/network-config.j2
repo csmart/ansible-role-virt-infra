@@ -1,0 +1,53 @@
+{% for network in virt_infra_networks %}
+{% if loop.index0 == 0 %}
+version: 2
+ethernets:
+{% endif %}
+  {{ network.device | default('eth' + (loop.index0 |string) )}}:
+    set-name: {{ network.device | default('eth' + (loop.index0 |string) ) }}
+    match:
+      macaddress: '{{ network.mac | default(('52:54:' + ("%02d" | format(loop.index0) |string)) | random_mac(seed=inventory_hostname)) }}'
+{% if network.mtu is defined and network.mtu %}
+    mtu: {{ network.mtu }}
+{% endif %}
+{% if network.addresses is defined and network.addresses %}
+    addresses:
+{% for address in network.addresses %}
+      - {{ address }}
+{% endfor %}
+{% else %}
+    dhcp4: {{ network.dhcp4 | default(true) }}
+    dhcp6: {{ network.dhcp6 | default(true) }}
+{% endif %}
+{% if network.gateway4 is defined and network.gateway4 %}
+    gateway4: {{ network.gateway4 }}
+{% endif %}
+{% if network.gateway6 is defined and network.gateway6 %}
+    gateway6: {{ network.gateway6 }}
+{% endif %}
+{% if network.nameservers.addresses is defined and network.nameservers.addresses %}
+    nameservers:
+      addresses:
+{% for ip in network.nameservers.addresses %}
+        - {{ ip }}
+{% endfor %}
+{% if network.nameservers.search is defined and network.nameservers.search %}
+      search:
+{% for domain in network.nameservers.search %}
+        - {{ domain }}
+{% endfor %}
+{% endif %}
+{% endif %}
+{% if network.routes is defined and network.routes %}
+    routes:
+{% for route in network.routes %}
+{% if (route.to is defined and route.to) and (route.via is defined and route.via) %}
+      - to: {{ route.to }}
+        via: {{ route.via }}
+{% if route.metric is defined and route.metric %}
+        metric: {{ route.metric }}
+{% endif %}
+{% endif %}
+{% endfor %}
+{% endif %}
+{% endfor %}
