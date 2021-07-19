@@ -32,7 +32,13 @@
     {% if group.vlan is defined and group.vlan %}
     <vlan{% if group.trunk is defined and group.trunk %} trunk='yes'{% endif %}>
       {% for vlan in group.vlan %}
+      {% if vlan is iterable and vlan is not mapping and vlan is not string %}
+      {% for v in range(vlan[0]|int, vlan[-1]|int + 1) %}
+      <tag id='{{ v }}'{% if group.native_vlan is defined and group.native_vlan == v %} nativeMode='untagged'{% endif %} />
+      {% endfor %}
+      {% else %}
       <tag id='{{ vlan }}'{% if group.native_vlan is defined and group.native_vlan == vlan %} nativeMode='untagged'{% endif %} />
+      {% endif %}
       {% endfor %}
     </vlan>
     {% endif %}

@@ -507,6 +507,8 @@ Now you can use `ovs-bridge` as the `device` of an `ovs` bridge in your
 libvirt networks for you. You can set up multiple VLANs and set one as default
 native (if required).
 
+VLAN ranges are supported by defining it as a list.
+
 ```yaml
       virt_infra_host_networks:
         present:
@@ -521,6 +523,7 @@ native (if required).
                 native_vlan: 1
                 vlan:
                   - 1
+                  - [20,29]
                   - 99
               # This is portgroup just for native VLAN 1
               - name: default
