@@ -183,7 +183,7 @@
     -a {{ hostvars[groups['kvmhost'][0]].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-boot.qcow2
     {% if virt_infra_disk_cmd is defined and virt_infra_disk_cmd %}
     {% for cmd in virt_infra_disk_cmd %}
-    --run-command "{{ cmd }}"
+    --run-command '{{ cmd }}'
     {% endfor %}
     {% endif %}
   register: result_disk_cmd
