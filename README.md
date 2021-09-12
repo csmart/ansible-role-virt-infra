@@ -19,6 +19,7 @@
 	* [Role Variables](#role-variables)
 	* [Dependencies](#dependencies)
 	* [Example Inventory](#example-inventory)
+		* [Multiple KVM hosts](#multiple-kvm-hosts)
 	* [Example Playbook](#example-playbook)
 		* [Grab the cloud image](#grab-the-cloud-image)
 		* [Run the playbook](#run-the-playbook)
@@ -32,29 +33,33 @@
 
 # Ansible Role: Virtual Infrastructure
 
-This role is designed to define and manage networks and guests on a KVM host.
-Ansible's _--limit_ option lets you manage them individually or as a group.
+This role is designed to define and manage networks and guests on one or more
+KVM hosts. Ansible's `--limit` option lets you manage them individually or as
+a group.
 
 It is really designed for dev work, where the KVM host is your local machine,
-you have sudo and talk to libvirtd at qemu:///system (although in theory it
-supports a remote KVM host).
+you have `sudo` and talk to `libvirtd` at `qemu:///system` however it also
+works on remote hosts.
 
 Setting guest states to _running_, _shutdown_, _destroyed_ or _undefined_ (to
 delete and clean up) are supported.
 
 You can set whatever memory, CPU, disks and network cards you want for your
 guests, either via hostgroups or individually. A mixture of multiple disks is
-supported, including _scsi_, _sata_, _virtio_ and even _nvme_.
+supported, including _scsi_, _sata_, _virtio_ and even _nvme_ (on supported
+distros).
 
 You can create private NAT libvirt networks on the KVM host and then put VMs on
-any number of them. Guests can use those libvirt networks or _existing_ bridge
-devices (e.g. br0) and Open vSwitch (OVS) bridge on the KVM host (this won't
-create bridges on the host, but it will check that the bridge interface
-exists). You can specify the MAC for each interface if you require.
+any number of them. Guests can use those libvirt networks or _existing_ Linux
+bridge devices (e.g. `br0`) and Open vSwitch (OVS) bridge on the KVM host (this
+won't create bridges on the host, but it will check that the bridge interface
+exists). You can specify the model of network card as well as the MAC for each
+interface if you require, however it defaults to an idempotent address based on
+the hostname.
 
 You can also create routed libvirt networks on the KVM host and then put VMs on
 any number of them. In this case, a new bridge is created with the name you
-specify (e.g. br1), wired to an _existing_ interface (e.g. eth0). You can
+specify (e.g. `br1`), wired to an _existing_ interface (e.g. `eth0`). You can
 specify the MAC for each interface if you require.
 
 This supports various distros and uses their qcow2 [cloud
@@ -63,18 +68,22 @@ images). I've tested CentOS, Fedora, Debian, Ubuntu and openSUSE.
 
 The qcow2 cloud base images to use for guests are specified as variables in the
 inventory and should exist under libvirt images directory (default is
-_/var/lib/libvirt/images/_). That is to say, this won't download the images for
+`/var/lib/libvirt/images/`). That is to say, this won't download the images for
 you automatically.
 
-Guest qcow2 boot images are created from those base images and cloud-init is
-used to configure guests on boot up. The cloud-init ISOs are created
-automatically and attached to the guest. Timezone will be set to match the KVM
-host by default.
+Guest qcow2 boot images are created from those base images. By default these
+use the cloud image as a backing file, however it also supports cloning
+instead. You can create additional disks as you like. You can also choose to
+keep any disk image rather than deleting it when a VM is undefined. The
+cloud-init ISOs are created automatically and attached to the guest to
+configure it on boot.
 
-By default, your shell username will also be used for the guest, along with
-your public SSH keys on the KVM host (you can override that). Host entries are
-added to /etc/hosts on the KVM host so you can SSH straight in (but it doesn't
-modify your SSH config yet). You can set a root password if you really want to.
+The timezone will be set to match the KVM host by default and the ansible user
+will be used for the guest, along with your public SSH keys on the KVM host
+(you can override that). Host entries are added to `/etc/hosts` on the KVM host
+and it also modifies ansible user's SSH config and adds the fingerprint to
+`known_hosts` so that you can SSH straight in (which it tests as part of the
+deploy). You can set a root password if you really want to.
 
 With all that, you could define and manage OpenStack/Swift/Ceph clusters of
 different sizes with multiple networks, disks and even distros!
@@ -84,11 +93,8 @@ different sizes with multiple networks, disks and even distros!
 All that's really needed is a Linux host, capable of running KVM, some guest
 images and a basic inventory. Ansible will do the rest (on supported distros).
 
-**NOTE:** The Ansible will install KVM, libvirtd and other required packages on
-supported distros and also make sure the libvirtd is running.
-
 A working x86_64 KVM host where the user running Ansible can communicate with
-libvirtd via sudo.
+`libvirtd` via `sudo`.
 
 It expects hardware support for KVM in the CPU so that we an create accelerated
 guests and pass the CPU through (supports nested virtualisation).
@@ -100,7 +106,8 @@ I have tested this on CentOS 8, Fedora 3x, Debian 10, Ubuntu Bionic/Eoan and
 openSUSE 15 hosts, but other Linux machines probably work.
 
 At least one SSH key pair on your KVM host (the Ansible will generate one if
-missing).
+missing). The SSH key used for guests should not require an SSH passphrase, if
+on a remote KVM host. If local, then make sure you've added it to ssh agent.
 
 Several user space tools are also required on the KVM host (the Ansible will
 install these on supported hosts).
@@ -113,7 +120,7 @@ install these on supported hosts).
 
 Download the guest images you want to use ([this is what I
 downloaded](#guest-cloud-images)) and put them in libvirt images path (usually
-_/var/lib/libvirt/images/_). This will check that the images you specified
+`/var/lib/libvirt/images/`). This will check that the images you specified
 exist and error if they are not found.
 
 ### KVM host
@@ -121,10 +128,15 @@ exist and error if they are not found.
 Here are some instructions for configuring your KVM host, in case they are
 useful.
 
+**NOTE:** This role will do all this for you including install KVM, libvirtd
+and other required packages on supported distros and also make sure the
+libvirtd is running.
+
+
 #### Fedora
 
 ```bash
-# Create SSH key if you don't have one
+# Create SSH key if you don't have one (don't set a passphrase if remote KVM host)
 ssh-keygen
 
 # libvirtd
@@ -307,8 +319,8 @@ virt-install
 #### Using routed networks
 
 You can route traffic into a newly created bridge by specifying forward *type: route*.
-This code supports automatic creation of a new bridge named *bridge_dev* which will be
-wired onto an existing interface in the host, specified by parameter *host_dev*.
+This code supports automatic creation of a new bridge named `bridge_dev` which will be
+wired onto an existing interface in the host, specified by parameter `host_dev`.
 
 The example below shows how a bridge can be created, supporting both IPv4 and IPv6:
 
@@ -347,8 +359,8 @@ Notes:
    (in general) given to you by your IPv6 provider or by a IPv6 over IPv4 tunnelling
    solution such as [Hurricane Electric's tunnel broker service](http://tunnelbroker.net/).
 
-2. It's highly recommended that you stick with *ip6_prefix: 64*, since it is the
-   recommended setting in Libvirt documentation.
+2. It's highly recommended that you stick with `ip6_prefix: 64`, since it is the
+   recommended setting in libvirt documentation.
 
 #### Configuring bridges with NetworkManager
 
@@ -565,21 +577,21 @@ I have tested the following guests successfully:
   * https://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud.qcow2
 * CentOS 8
   * https://cloud.centos.org/centos/8/x86_64/images/CentOS-8-GenericCloud-8.1.1911-20200113.3.x86_64.qcow2
-* Fedora 31
-  * https://download.fedoraproject.org/pub/fedora/linux/releases/31/Cloud/x86_64/images/Fedora-Cloud-Base-31-1.9.x86_64.qcow2
-* Fedora 32
-  * https://download.fedoraproject.org/linux/releases/32/Cloud/x86_64/images/Fedora-Cloud-Base-32-1.6.x86_64.qcow2
+* Fedora 33
+  * https://download.fedoraproject.org/pub/fedora/linux/releases/33/Cloud/x86_64/images/Fedora-Cloud-Base-33-1.2.x86_64.qcow2
+* Fedora 34
+  * https://download.fedoraproject.org/pub/fedora/linux/releases/34/Cloud/x86_64/images/Fedora-Cloud-Base-34-1.2.x86_64.qcow2
 * Debian 10
-  * http://cdimage.debian.org/cdimage/openstack/current/debian-10.2.0-openstack-amd64.qcow2
+  * http://cdimage.debian.org/cdimage/openstack/current-10/debian-10-openstack-amd64.qcow2
 * Ubuntu 18.04 LTS
   * http://cloud-images.ubuntu.com/bionic/current/bionic-server-cloudimg-amd64.img
 * Ubuntu 20.04 LTS
   * http://cloud-images.ubuntu.com/focal/current/focal-server-cloudimg-amd64.img
-* openSUSE 15.2 JeOS
-  * http://download.opensuse.org/distribution/leap/15.2/appliances/openSUSE-Leap-15.2-JeOS.x86_64-OpenStack-Cloud.qcow2
+* openSUSE 15.3 JeOS
+  * http://download.opensuse.org/distribution/leap/15.3/appliances/openSUSE-Leap-15.3-JeOS.x86_64-15.3-OpenStack-Cloud-Current.qcow2
 
-So that we can configure the guest and get its IP, both cloud-init and
-qemu-guest-agent will be installed into you guest's image, just in case.
+So that we can configure the guest and get its IP, both `cloud-init` and
+`qemu-guest-agent` will be installed into you guest's image, just in case.
 
 This can be changed or overridden using the `virt_infra_guest_deps` variable,
 which is a list.
@@ -589,29 +601,35 @@ old MAC addresses.
 
 ## Role Variables
 
-The defaults are set in the _defaults/main.yml_ file.
+The role defaults are set in the _defaults/main.yml_ file.
 
 These can be overridden at host or hostgroup level, as necessary. However, the
 role is designed to pretty much work out of the box (so long as you have the
 default CentOS image).
 
 ```yaml
+---
+# Defaults for virt-infra Ansible role
+# Values which are commented out are optional
+
 ## Guest related
+
 # Valid guest states are: running, shutdown, destroyed or undefined
-virt_infra_state: running
+virt_infra_state: "running"
 
 # Guests are not autostarted on boot
 virt_infra_autostart: "no"
 
-# Guest user, defaults to user on KVM host
-virt_infra_user: "{{ hostvars[groups['kvmhost'][0]].ansible_env.USER }}"
+# Guest user, by default this will be set to the same user as KVM host user
+virt_infra_user: "{{ hostvars[kvmhost].ansible_env.USER }}"
 
 # Password of default user (consider a vault if you need secure passwords)
 # No root password by default
 virt_infra_password: "password"
-virt_infra_root_password:
+#virt_infra_root_password:
 
 # VM specs for guests
+# See virt-install manpage for supported values
 virt_infra_ram: "1024"
 virt_infra_ram_max: "{{ virt_infra_ram }}"
 virt_infra_cpus: "1"
@@ -623,30 +641,35 @@ virt_infra_machine_type: "q35"
 # If not specified, we default to all public keys on KVM host
 virt_infra_ssh_keys: []
 
+# If no SSH keys are specified or found on the KVM host, we create one with this
+virt_infra_ssh_key_size: "2048"
+virt_infra_ssh_key_type: "rsa"
+
 # Whether to enable SSH password auth
 virt_infra_ssh_pwauth: true
 
-# Networks for guests are a list, you can add more than one
+# Whether to use cloud-init to configure networking on guest
+virt_infra_network_config: false
+
+# Networks are a list, you can add more than one
 # "type" is optional, both "nat" and "bridge" are supported
 #  - "nat" is default type and should be a libvirt network
-#  - "bridge" type requires the bridge interface (e.g. br0) to already exist on KVM host
-#  - "ovs" type requires the OVS bridge interface (e.g. ovsbr0) to already exist on KVM host
+#  - "bridge" type requires the bridge interface as the name (e.g. name: "br0") which also must already be setup on KVM host
 # "model" is also optional
-# "mtu" is also optional
 virt_infra_networks:
   - name: "default"
     type: "nat"
     model: "virtio"
-    mtu: 9000
 
-# Disk defaults, support various libvirt options
-# We generally don't set them though, and leave it to hypervisor default
+# Disks, support various libvirt options
+# We generally don't set them though and leave it to hypervisor default
+# See virt-install manpage for supported values
 virt_infra_disk_size: "20"
 virt_infra_disk_bus: "scsi"
 virt_infra_disk_io: "threads"
 virt_infra_disk_cache: "writeback"
 
-# Disks for guests are a list, you can add more than one
+# Disks are a list, you can add more than one
 # If you override this, you must still include 'boot' device first in the list
 # Only 'name' is required, others are optional (default size is 20GB)
 # All guests require at least a boot drive (which is the default)
@@ -654,40 +677,62 @@ virt_infra_disks:
   - name: "boot"
     size: "{{ virt_infra_disk_size }}"
     bus: "{{ virt_infra_disk_bus }}"
-    io: "{{ virt_infra_disk_io }}"
-    cache: "{{ virt_infra_disk_cache }}"
+#   io: "{{ virt_infra_disk_io }}"
+#   cache: "{{ virt_infra_disk_cache }}"
 
-# Default distro is CentOS 7, override in guests or groups
-virt_infra_distro_image: "CentOS-7-x86_64-GenericCloud.qcow2"
+# Default distro is CentOS 8, override in guests or groups
+virt_infra_distro_image: "CentOS-Stream-GenericCloud-8-20210603.0.x86_64.qcow2"
 
 # Determine supported variants on your KVM host with command, "osinfo-query os"
 # This doesn't really make much difference to the guest, maybe slightly different bus
-# You could probably just leave this as "centos7.0" for all distros, if you wanted to
-virt_infra_variant: "centos7.0"
+# You could probably just set this as "centos7.0" for all distros, if you wanted to
+#virt_infra_variant: "centos7.0"
 
-## KVM host
+# These distro vars are here for reference and convenience
+virt_infra_distro: "centos"
+virt_infra_distro_release: "7"
+virt_infra_distro_image_url: "https://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud.qcow2"
+virt_infra_distro_image_checksum_url: "https://cloud.centos.org/centos/7/images/sha256sum.txt"
+
+## KVM host related
+
 # Connect to system libvirt instance
 virt_infra_host_libvirt_url: "qemu:///system"
 
 # Path where disk images are kept
 virt_infra_host_image_path: "/var/lib/libvirt/images"
 
+# Disable qemu security driver by default
+# This is overridden in distro specific vars
+virt_infra_security_driver: "none"
+
+# Virtual BMC is disabled by default
+virt_infra_vbmc: false
+
+# By default we install with pip, but if you prefer to do it manually, set this to false
+virt_infra_vbmc_pip: true
+
+# Default vbmc service, override if something else on your distro
+virt_infra_vbmc_service: vbmcd
+
 # Networks on kvmhost are a list, you can add more than one
 # You can create and remove NAT networks on kvmhost (creating bridges not supported)
 # The 'default' network is the standard one shipped with libvirt
 # By default we don't remove any networks (empty absent list)
-# 'mtu' is optional
 virt_infra_host_networks:
   absent: []
   present:
     - name: "default"
-      ip_address: "192.168.112.1"
+      type: "nat"
+      ip_address: "192.168.122.1"
       subnet: "255.255.255.0"
-      dhcp_start: "192.168.112.2"
-      dhcp_end: "192.168.112.254"
-      mtu: 9000
+      dhcp_start: "192.168.122.2"
+      dhcp_end: "192.168.122.254"
 
-# List of binaries to check for on kvmhost
+# Command for creating ISO images
+virt_infra_mkiso_cmd: genisoimage
+
+# List of binaries to check for on KVM Host
 virt_infra_host_deps:
   - qemu-img
   - osinfo-query
@@ -695,7 +740,7 @@ virt_infra_host_deps:
   - virt-customize
   - virt-sysprep
 
-# List of packages to install into guest image
+# Comma separated list of packages to install into guest disks
 virt_infra_guest_deps:
   - cloud-init
   - qemu-guest-agent
@@ -712,7 +757,10 @@ has sample inventory files and site playbook to call the role, which might be
 helpful.
 
 It might be best if the inventories are split into multiple files for ease of
-management, under an _inventory_ directory or such.
+management, under an _inventory_ directory or such. I suggest a common
+_kvmhost.yml_ then separate inventory files for each group of guests, e.g.
+_openstack.yml_. When running ansible, you include the whole directory as the
+inventory source.
 
 The inventory used with this role must include a hostgroup called _kvmhost_ and
 other hostgroups for guests.
@@ -721,10 +769,10 @@ Custom settings can be provided for each host or group of hosts in the
 inventory.
 
 To create a new group of guests to manage, create a new yml file under the
-inventory directory. For example, if you wanted a set of guests for
-OpenStack, you could create an openstack.yml file and populate it as required.
+inventory directory. For example, if you wanted a set of guests for OpenStack,
+you could create an `openstack.yml` file and populate it as required.
 
-To manage specific hosts or groups, simply use Ansible's _--limit_ option to
+To manage specific hosts or groups, simply use Ansible's `--limit` option to
 specify the hosts or hostgroups (must also include _kvmhost_ group). This way
 you can use the one inventory for lots of different guests and manage them
 separately.
@@ -732,10 +780,10 @@ separately.
 The KVM host is where the libvirt networks are created and therefore specified
 as vars under that hostgroup.
 
-Here is an example inventory file _simple.yml_ in YAML format. It is specifying
-_kvmhost_ as localhost and creating three _simple_ CentOS guests, using the
-role defaults.  Note there are two networks being created (_default_ and
-_example_) and one which is removed (_other_).
+Here is an example inventory file _kvmhost.yml_ in YAML format. It is
+specifying _kvmhost_ as localhost with a local connection. Note there are two
+networks being created (_default_ and _example_) and one which is removed
+(_other_).
 
 
 ```yaml
@@ -768,10 +816,20 @@ kvmhost:
           subnet: "255.255.255.0"
           dhcp_start: "192.168.113.2"
           dhcp_end: "192.168.113.99"
+```
+
+Here's an example guest inventory called _simple.yml_ which defines CentOS 8
+guests in a group called _simple_, using the role defaults.
+
+```
+---
+## YAML based inventory, see:
+## https://docs.ansible.com/ansible/latest/plugins/inventory/yaml.html
+#
 simple:
   hosts:
     centos-simple-[0:2]:
-      ansible_python_interpreter: /usr/bin/python
+      ansible_python_interpreter: /usr/libexec/platform-python
 ```
 
 If you want a group of VMs to all be the same, set the vars at the hostgroup
@@ -829,8 +887,90 @@ example:
     virt_infra_networks:
       - name: "example"
         type: nat
-        mac: 52:54:00:aa:bb:cc
 ```
+
+### Multiple KVM hosts
+
+You can also specify multiple KVM hosts.
+
+```yaml
+---
+kvmhost:
+  hosts:
+    kvmhost1:
+    kvmhost2:
+    kvmhost3:
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+    virt_infra_host_networks:
+      absent: []
+      present:
+        - name: "default"
+          ip_address: "192.168.112.1"
+          subnet: "255.255.255.0"
+          dhcp_start: "192.168.112.2"
+          dhcp_end: "192.168.112.254"
+
+```
+
+To have a VM land on a specific KVM host, you must add the variable `kvmhost`
+with a string that matches a KVM host from the `kvmhost` group.
+
+For example, six CentOS hosts across three KVM hosts:
+
+```yaml
+---
+simple:
+  hosts:
+    simple-centos-[1:2]:
+      kvmhost: kvmhost1
+    simple-centos-[3:4]:
+      kvmhost: kvmhost2
+    simple-centos-[5:6]:
+      kvmhost: kvmhost3
+  vars:
+    ansible_python_interpreter: /usr/libexec/platform-python
+    virt_infra_distro_image: "CentOS-Stream-GenericCloud-8-20210603.0.x86_64.qcow2"
+```
+
+If no kvmhost is specified for a VM it will default to the first KVM host in
+the `kvmhost` group (i.e. kvmhost[0]) which matches the original behaviour for
+the role.
+
+Validation checks have been updated to make sure that all of the KVM hosts are
+valid and that any specified KVM host for a VM is in the `kvmhost` group.
+
+To group VMs on certain KVM hosts, consider making child groups and specify
+kvmhost at the child group level.
+
+For example, those CentOS guests again:
+
+```yaml
+---
+simple:
+  hosts:
+    simple-centos-[1:6]:
+  vars:
+    ansible_python_interpreter: /usr/libexec/platform-python
+    virt_infra_distro_image: "CentOS-Stream-GenericCloud-8-20210603.0.x86_64.qcow2"
+  children:
+    simple_kvmhost1:
+      hosts:
+        simple-centos-[1:2]:
+      vars:
+        kvmhost: kvmhost1
+    simple_kvmhost2:
+      hosts:
+        simple-centos-[3:4]:
+      vars:
+        kvmhost: kvmhost2
+    simple_kvmhost3:
+      hosts:
+        simple-centos-[5:6]:
+      vars:
+        kvmhost: kvmhost3
+```
+
 
 ## Example Playbook
 
@@ -838,13 +978,10 @@ I've tried to keep the Ansible as a simple, logical set of steps and not get
 too tricky. Having said that, the playbook is quite specific.
 
 There are some tasks which can only be run on the KVM host and others in a
-specific order. Some of the tasks need to be looped through with play_hosts but
-only run once and delegated to the KVM host, like updating _/etc/hosts_ and
-_~/.ssh/config_ on KVM host. Doing it this way avoids running in serial, which
-is messy.
+specific order.
 
-This code will also help by running a bunch of validation checks on the KVM
-host and for your guest configs to try to catch anything that's not right.
+This code will help by running a bunch of validation checks on the KVM host and
+for your guest configs to try to catch anything that's not right.
 
 Here is an example playbook _virt-infra.yml_ which calls the role.
 
@@ -861,14 +998,15 @@ Here is an example playbook _virt-infra.yml_ which calls the role.
 Before we run the playbook, download the CentOS cloud image.
 
 ```bash
-curl -O https://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud.qcow2
-sudo mv -iv CentOS-7-x86_64-GenericCloud.qcow2 /var/lib/libvirt/images/
+curl -O https://cloud.centos.org/centos/8/x86_64/images/CentOS-Stream-GenericCloud-8-20210603.0.x86_64.qcow2
+sudo mv -iv CentOS-Stream-GenericCloud-8-20210603.0.x86_64.qcow2 /var/lib/libvirt/images/
 ```
 
 ### Run the playbook
 
 Now run the Ansible playbook against the kvmhost and the guests in the _simple_
-group (note that we limit to both the _kvmhost_ and the _simple_ hostgroups).
+group using the inventory above (note that we limit to both the _kvmhost_ and
+the _simple_ hostgroups).
 
 ```bash
 ansible-playbook \
@@ -898,7 +1036,7 @@ ansible-playbook \
 ### Cleanup
 
 To delete the guests in a hostgroup you could specify them (or a specific host)
-with --limit and pass in _virt_infra_state=undefined_ as a command line extra
+with `--limit` and pass in _virt_infra_state=undefined_ as a command line extra
 arg.
 
 This will override the guest state to undefined and if they exist, they will be
@@ -936,28 +1074,30 @@ same inventory to do whatever you wanted with those machines...
 
 ```yaml
 ---
-- name: Upgrade all packages
-  package:
-    name: '*'
-    state: latest
-  become: true
-  register: result_package_update
-  retries: 30
-  delay: 10
-  until: result_package_update is succeeded
+- hosts: all,!kvmhost
+  tasks:
+    - name: Upgrade all packages
+      package:
+        name: '*'
+        state: latest
+      become: true
+      register: result_package_update
+      retries: 30
+      delay: 10
+      until: result_package_update is succeeded
 
-- name: Install packages
-  package:
-    name:
-      - git
-      - tmux
-      - vim
-    state: present
-  become: true
-  register: result_package_install
-  retries: 30
-  delay: 10
-  until: result_package_install is succeeded
+    - name: Install packages
+      package:
+        name:
+          - git
+          - tmux
+          - vim
+        state: present
+      become: true
+      register: result_package_install
+      retries: 30
+      delay: 10
+      until: result_package_install is succeeded
 ```
 
 ## License

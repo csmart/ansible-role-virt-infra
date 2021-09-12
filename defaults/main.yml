@@ -11,7 +11,7 @@ virt_infra_state: "running"
 virt_infra_autostart: "no"
 
 # Guest user, by default this will be set to the same user as KVM host user
-virt_infra_user: "{{ hostvars[groups['kvmhost'][0]].ansible_env.USER }}"
+virt_infra_user: "{{ hostvars[kvmhost].ansible_env.USER }}"
 
 # Password of default user (consider a vault if you need secure passwords)
 # No root password by default
@@ -70,8 +70,8 @@ virt_infra_disks:
 #   io: "{{ virt_infra_disk_io }}"
 #   cache: "{{ virt_infra_disk_cache }}"
 
-# Default distro is CentOS 7, override in guests or groups
-virt_infra_distro_image: "CentOS-7-x86_64-GenericCloud.qcow2"
+# Default distro is CentOS 8, override in guests or groups
+virt_infra_distro_image: "CentOS-Stream-GenericCloud-8-20210603.0.x86_64.qcow2"
 
 # Determine supported variants on your KVM host with command, "osinfo-query os"
 # This doesn't really make much difference to the guest, maybe slightly different bus
@@ -80,9 +80,9 @@ virt_infra_distro_image: "CentOS-7-x86_64-GenericCloud.qcow2"
 
 # These distro vars are here for reference and convenience
 virt_infra_distro: "centos"
-virt_infra_distro_release: "7"
-virt_infra_distro_image_url: "https://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud.qcow2"
-virt_infra_distro_image_checksum_url: "https://cloud.centos.org/centos/7/images/sha256sum.txt"
+virt_infra_distro_release: "8"
+virt_infra_distro_image_url: "https://cloud.centos.org/centos/8-stream/x86_64/images/CentOS-Stream-GenericCloud-8-20210603.0.x86_64.qcow2"
+virt_infra_distro_image_checksum_url: "https://cloud.centos.org/centos/8-stream/x86_64/images/CHECKSUM"
 
 ## KVM host related
 

@@ -10,38 +10,44 @@
     create: true
     state: absent
     path: /etc/hosts
-    marker: "# {mark} {{ hostvars[item]['inventory_hostname'] }} managed by virt_infra Ansible playbook"
+    marker: "# {mark} {{ inventory_hostname }} managed by virt_infra Ansible playbook"
   become: true
-  delegate_to: "{{ groups['kvmhost'][0] }}"
+  delegate_to: "{{ kvmhost }}"
   when:
-    - hostvars[item]['virt_infra_state'] | default(virt_infra_state) == "undefined"
-  with_items: "{{ play_hosts }}"
-  run_once: true
+    - inventory_hostname not in groups['kvmhost']
+    - virt_infra_state | default(virt_infra_state) == "undefined"
+  throttle: 1
+#  with_items: "{{ play_hosts }}"
+#  run_once: true
 
 - name: Remove guests from SSH known_hosts
   blockinfile:
     create: true
     mode: 0600
     state: absent
-    path: "{{ hostvars[groups['kvmhost'][0]].ansible_env.HOME }}/.ssh/known_hosts"
-    marker: "# {mark} {{ hostvars[item]['inventory_hostname'] }} managed by virt_infra Ansible playbook"
+    path: "{{ hostvars[kvmhost].ansible_env.HOME }}/.ssh/known_hosts"
+    marker: "# {mark} {{ inventory_hostname }} managed by virt_infra Ansible playbook"
   become: false
-  delegate_to: "{{ groups['kvmhost'][0] }}"
+  delegate_to: "{{ kvmhost }}"
   when:
-    - hostvars[item]['virt_infra_state'] | default(virt_infra_state) == "undefined"
-  with_items: "{{ play_hosts }}"
-  run_once: true
+    - inventory_hostname not in groups['kvmhost']
+    - virt_infra_state | default(virt_infra_state) == "undefined"
+  throttle: 1
+#  with_items: "{{ play_hosts }}"
+#  run_once: true
 
 - name: Remove guests from SSH config
   blockinfile:
     create: true
     mode: 0600
     state: absent
-    path: "{{ hostvars[groups['kvmhost'][0]].ansible_env.HOME }}/.ssh/config"
-    marker: "# {mark} {{ hostvars[item]['inventory_hostname'] }} managed by virt_infra Ansible playbook"
+    path: "{{ hostvars[kvmhost].ansible_env.HOME }}/.ssh/config"
+    marker: "# {mark} {{ inventory_hostname }} managed by virt_infra Ansible playbook"
   become: false
-  delegate_to: "{{ groups['kvmhost'][0] }}"
+  delegate_to: "{{ kvmhost }}"
   when:
-    - hostvars[item]['virt_infra_state'] | default(virt_infra_state) == "undefined"
-  with_items: "{{ play_hosts }}"
-  run_once: true
+    - inventory_hostname not in groups['kvmhost']
+    - virt_infra_state | default(virt_infra_state) == "undefined"
+  throttle: 1
+#  with_items: "{{ play_hosts }}"
+#  run_once: true
