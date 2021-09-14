@@ -21,7 +21,7 @@
 - name: Get list of all VMs
   virt:
     command: list_vms
-    uri: "{{ hostvars[groups['kvmhost'][0]].virt_infra_host_libvirt_url | default(virt_infra_host_libvirt_url) }}"
+    uri: "{{ virt_infra_host_libvirt_url | default(virt_infra_host_libvirt_url) }}"
   register: result_all_vms
   become: true
   when:
@@ -31,7 +31,7 @@
   virt:
     command: list_vms
     state: running
-    uri: "{{ hostvars[groups['kvmhost'][0]].virt_infra_host_libvirt_url | default(virt_infra_host_libvirt_url) }}"
+    uri: "{{ virt_infra_host_libvirt_url | default(virt_infra_host_libvirt_url) }}"
   register: result_running_vms
   become: true
   when:
@@ -40,7 +40,7 @@
 - name: Get info on all VMs
   virt:
     command: info
-    uri: "{{ hostvars[groups['kvmhost'][0]].virt_infra_host_libvirt_url | default(virt_infra_host_libvirt_url) }}"
+    uri: "{{ virt_infra_host_libvirt_url | default(virt_infra_host_libvirt_url) }}"
   register: result_info_vms
   become: true
   when:

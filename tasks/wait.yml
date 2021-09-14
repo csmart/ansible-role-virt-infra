@@ -17,13 +17,13 @@
   when:
     - inventory_hostname not in groups['kvmhost']
     - virt_infra_state is defined and virt_infra_state == "running"
-  delegate_to: "{{ groups['kvmhost'][0] }}"
+  delegate_to: "{{ kvmhost }}"
 
 - name: Get guest SSH fingerprints
   shell: "set -o pipefail && ssh-keyscan {{ inventory_hostname }} {{ vm_ip }} | sort"
   args:
     executable: /bin/bash
-  delegate_to: "{{ groups['kvmhost'][0] }}"
+  delegate_to: "{{ kvmhost }}"
   register: result_keyscan
   changed_when: false
   when:
@@ -35,17 +35,19 @@
     create: true
     mode: 0600
     state: present
-    path: "{{ hostvars[groups['kvmhost'][0]].ansible_env.HOME }}/.ssh/known_hosts"
-    marker: "# {mark} {{ hostvars[item]['inventory_hostname'] }} managed by virt_infra Ansible playbook"
+    path: "{{ hostvars[kvmhost].ansible_env.HOME }}/.ssh/known_hosts"
+    marker: "# {mark} {{ inventory_hostname }} managed by virt_infra Ansible playbook"
     block: |-
-      {{ hostvars[item]['result_keyscan']['stdout'] }}
+      {{ result_keyscan.stdout }}
   become: false
-  delegate_to: "{{ groups['kvmhost'][0] }}"
+  delegate_to: "{{ kvmhost }}"
   when:
-    - hostvars[item]['result_keyscan']['stdout'] is defined and hostvars[item]['result_keyscan']['stdout']
-    - hostvars[item]['virt_infra_state'] | default(virt_infra_state) == "running"
-  with_items: "{{ play_hosts }}"
-  run_once: true
+    - inventory_hostname not in groups['kvmhost']
+    - result_keyscan.stdout is defined and result_keyscan.stdout
+    - virt_infra_state | default(virt_infra_state) == "running"
+  throttle: 1
+#  with_items: "{{ play_hosts }}"
+#  run_once: true
 
 # This is not using wait_for module with path option anymore because it doesn't
 # work when kvmhost is remote
@@ -55,7 +57,7 @@
   retries: 60
   delay: 2
   until: result_wait_cloudinit is succeeded
-  delegate_to: "{{ groups['kvmhost'][0] }}"
+  delegate_to: "{{ kvmhost }}"
   when:
     - inventory_hostname not in groups['kvmhost']
     - virt_infra_state == "running"

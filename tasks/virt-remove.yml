@@ -1,16 +1,16 @@
 ---
 - name: Undefine VM
   command: >
-    virsh --connect {{ hostvars[groups['kvmhost'][0]].virt_infra_host_libvirt_url | default(virt_infra_host_libvirt_url) }}
+    virsh --connect {{ hostvars[kvmhost].virt_infra_host_libvirt_url | default(virt_infra_host_libvirt_url) }}
     undefine {{ inventory_hostname }}
     --managed-save
     --snapshots-metadata
   become: true
   when:
     - inventory_hostname not in groups['kvmhost']
-    - inventory_hostname in hostvars[groups['kvmhost'][0]].result_all_vms.list_vms
+    - inventory_hostname in hostvars[kvmhost].result_all_vms.list_vms
     - virt_infra_state == "undefined"
-  delegate_to: "{{ groups['kvmhost'][0] }}"
+  delegate_to: "{{ kvmhost }}"
   register: result_undefine
   retries: 30
   delay: 2

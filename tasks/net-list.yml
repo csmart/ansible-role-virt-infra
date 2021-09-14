@@ -25,7 +25,7 @@
   virt_net:
     command: facts
     name: "{{ item.name }}"
-    uri: "{{ hostvars[groups['kvmhost'][0]].virt_infra_host_libvirt_url | default(virt_infra_host_libvirt_url) }}"
+    uri: "{{ virt_infra_host_libvirt_url | default(virt_infra_host_libvirt_url) }}"
   register: result_libvirt_network
   become: true
   run_once: true
@@ -37,7 +37,7 @@
   virt_net:
     command: list_nets
     name: dummy
-    uri: "{{ hostvars[groups['kvmhost'][0]].virt_infra_host_libvirt_url | default(virt_infra_host_libvirt_url) }}"
+    uri: "{{ virt_infra_host_libvirt_url | default(virt_infra_host_libvirt_url) }}"
   register: result_libvirt_network_list
   become: true
   run_once: true

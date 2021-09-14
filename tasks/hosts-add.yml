@@ -10,41 +10,49 @@
   blockinfile:
     path: /etc/hosts
     state: present
-    marker: "# {mark} {{ hostvars[item]['inventory_hostname'] }} managed by virt_infra Ansible playbook"
+    marker: "# {mark} {{ inventory_hostname }} managed by virt_infra Ansible playbook"
     block: |-
-      {{ hostvars[item]['vm_ip'] }} {{ hostvars[item]['inventory_hostname'] }}
+      {{ vm_ip }} {{ inventory_hostname }}
   become: true
-  delegate_to: "{{ groups['kvmhost'][0] }}"
+  delegate_to: "{{ kvmhost }}"
   when:
-    - hostvars[item]['vm_ip'] is defined and hostvars[item]['vm_ip']
-    - hostvars[item]['virt_infra_state'] | default(virt_infra_state) == "running"
-  with_items: "{{ play_hosts }}"
-  run_once: true
+    - inventory_hostname not in groups['kvmhost']
+    - vm_ip is defined and vm_ip
+    - virt_infra_state | default(virt_infra_state) == "running"
+  throttle: 1
+#  with_items: "{{ play_hosts }}"
+#  run_once: true
 
 - name: Add host to SSH config
   blockinfile:
     create: true
     mode: 0600
     state: present
-    path: "{{ hostvars[groups['kvmhost'][0]].ansible_env.HOME }}/.ssh/config"
-    marker: "# {mark} {{ hostvars[item]['inventory_hostname'] }} managed by virt_infra Ansible playbook"
+    path: "{{ hostvars[kvmhost].ansible_env.HOME }}/.ssh/config"
+    marker: "# {mark} {{ inventory_hostname }} managed by virt_infra Ansible playbook"
     block: |-
-      Host {{ hostvars[item]['vm_ip'] }} {{ hostvars[item]['inventory_hostname'] }}
-        Hostname  {{ hostvars[item]['vm_ip'] }}
-        User {{ hostvars[item]['virt_infra_user'] | default(hostvars[groups['kvmhost'][0]].ansible_env.USER) }}
-      {% if hostvars[item]['virt_infra_ssh_keys'] is not defined %}
-      {% if hostvars[groups['kvmhost'][0]].result_ssh_key_list.files is defined and hostvars[groups['kvmhost'][0]].result_ssh_key_list.files %}
-      {% for file in hostvars[groups['kvmhost'][0]].result_ssh_key_list.files %}
+      Host {{ vm_ip }} {{ inventory_hostname }}
+        Hostname  {{ vm_ip }}
+        User {{ virt_infra_user | default(hostvars[kvmhost].ansible_env.USER) }}
+      {% if virt_infra_ssh_keys is defined and virt_infra_ssh_keys %}
+      {% for key in virt_infra_ssh_keys %}
+      {{ "  IdentityFile " + key }}
+      {% endfor %}
+      {% elif virt_infra_ssh_keys is not defined or virt_infra_ssh_keys is defined and not virt_infra_ssh_keys %}
+      {% if hostvars[kvmhost].result_ssh_key_list.files is defined and hostvars[kvmhost].result_ssh_key_list.files %}
+      {% for file in hostvars[kvmhost].result_ssh_key_list.files %}
       {{ "  IdentityFile " + file.path.split('.pub')[0] }}
       {% endfor %}
-      {% elif hostvars[groups['kvmhost'][0]].result_ssh_key_gen.filename is defined and hostvars[groups['kvmhost'][0]].result_ssh_key_gen.filename %}
-      {{ "  IdentityFile " + hostvars[groups['kvmhost'][0]].result_ssh_key_gen.filename.split('.pub')[0] }}
+      {% elif hostvars[kvmhost].result_ssh_key_gen.filename is defined and hostvars[kvmhost].result_ssh_key_gen.filename %}
+      {{ "  IdentityFile " + hostvars[kvmhost].result_ssh_key_gen.filename.split('.pub')[0] }}
       {% endif %}
       {% endif %}
   become: false
-  delegate_to: "{{ groups['kvmhost'][0] }}"
+  delegate_to: "{{ kvmhost }}"
   when:
-    - hostvars[item]['vm_ip'] is defined and hostvars[item]['vm_ip']
-    - hostvars[item]['virt_infra_state'] | default(virt_infra_state) == "running"
-  with_items: "{{ play_hosts }}"
-  run_once: true
+    - inventory_hostname not in groups['kvmhost']
+    - vm_ip is defined and vm_ip
+    - virt_infra_state | default(virt_infra_state) == "running"
+  throttle: 1
+#  with_items: "{{ play_hosts }}"
+#  run_once: true

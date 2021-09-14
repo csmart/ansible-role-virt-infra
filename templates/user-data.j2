@@ -2,22 +2,22 @@
 # Set the default user
 system_info:
   default_user:
-    name: {{ virt_infra_user | default(hostvars[groups['kvmhost'][0]].ansible_env.USER) }}
+    name: {{ virt_infra_user | default(hostvars[kvmhost].ansible_env.USER) }}
 
 # Unlock the default user
 chpasswd:
   list: |
-     {{ virt_infra_user | default(hostvars[groups['kvmhost'][0]].ansible_env.USER) }}:{{ virt_infra_password | default(virt_infra_password) }}
+     {{ virt_infra_user | default(hostvars[kvmhost].ansible_env.USER) }}:{{ virt_infra_password | default(virt_infra_password) }}
   expire: False
 
 # System settings
 resize_rootfs: True
 ssh_pwauth: "{{ virt_infra_ssh_pwauth | default(True) }}"
 ssh_authorized_keys:
-{% for key in virt_infra_ssh_keys | default(hostvars[groups['kvmhost'][0]].virt_infra_ssh_keys, true) %}
+{% for key in virt_infra_ssh_keys | default(hostvars[kvmhost].virt_infra_ssh_keys, true) %}
   - {{ key }}
 {% endfor %}
-timezone: {{ virt_infra_timezone | default(hostvars[groups['kvmhost'][0]].virt_infra_timezone, true) }}
+timezone: {{ virt_infra_timezone | default(hostvars[kvmhost].virt_infra_timezone, true) }}
 {% if virt_infra_root_password is defined and virt_infra_root_password %}
 disable_root: false
 {% endif %}

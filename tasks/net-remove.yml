@@ -4,7 +4,6 @@
   virt_net:
     state: inactive
     name: "{{ item.name }}"
-  delegate_to: "{{ groups['kvmhost'][0] }}"
   with_items: "{{ virt_infra_host_networks.absent }}"
   when:
     - inventory_hostname in groups['kvmhost']
@@ -17,7 +16,6 @@
     command: undefine
     name: "{{ item.name }}"
     xml: '{{ lookup("template", "templates/virt-network.j2") }}'
-  delegate_to: "{{ groups['kvmhost'][0] }}"
   with_items: "{{ virt_infra_host_networks.absent }}"
   when:
     - inventory_hostname in groups['kvmhost']

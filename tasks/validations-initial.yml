@@ -1,0 +1,65 @@
+---
+# Guests need to have a KVM host to deploy to
+# If it is not defined (or defined to empty string), we default to the first kvmhost in the kvmhost group.
+- name: "Guests: Ensure a KVM host is defined"
+  set_fact:
+    kvmhost: "{{ groups['kvmhost'][0] }}"
+  when:
+    - inventory_hostname not in groups['kvmhost']
+    - kvmhost is not defined or kvmhost is defined and not kvmhost
+  changed_when: false
+
+# Using fail or assert module removes the host from inventory on a task failure
+# We don't really want to do that, as we want to discover all problems at same time
+# If KVM host fails a task and is removed from inventory, then we can't run subsequent tests for guests
+# Thus we abort the play entirely straight away if KVM host is unreachable
+# Otherwise, we don't abort but instead set a variable when anything fails
+# We then print out any errors and end the play after the checks have completed
+# This means we can perform all checks for all hosts so you know all things you need to fix
+
+- name: Validate KVM host
+  block:
+    # The KVM host must be in the play_hosts, else we can't do anything
+    # We only know this host is defined as part of hostgroup, 'kvmhost'
+    # If --limit is not specified we run against every host, so we're fine
+    # When --limit is specified, it might be simply 'kvmhost,guest' or 'all' or even combinations, like 'all,!but-not-this-vm'
+    # Convert it to a list so we can easily check either 'kvmhost' or 'all' is there
+    # I think this is a bit cleaner than regex and should catch other combinations
+    - name: Convert --limit into a list for validation
+      set_fact:
+        limit_list: "{{ ansible_limit.split(',') }}"
+      delegate_to: "{{ groups['kvmhost'][0] }}"
+      run_once: true
+      when:
+        - ansible_limit is defined
+
+    - name: "Guests: Check that KVM host exists in inventory"
+      set_fact:
+        validations_failed: "{{ validations_failed|default([]) + ['KVM host ' + kvmhost + ' not in kvmhost group'] }}"
+      when:
+        - inventory_hostname not in groups['kvmhost']
+        - kvmhost not in groups['kvmhost']
+      changed_when: true
+
+    - name: "Guests: Check that KVM host is in limit"
+      set_fact:
+        validations_failed: "{{ validations_failed|default([]) + ['KVM host ' + kvmhost + ' not in limit, include --limit kvmhost option'] }}"
+      when:
+        - ansible_limit is defined
+        - inventory_hostname not in groups['kvmhost']
+        - 'kvmhost not in limit_list and "kvmhost" not in limit_list and "all" not in limit_list'
+      changed_when: true
+
+    - name: Validation failures
+      debug:
+        msg: "{{ validations_failed|default('nothing') }}"
+      when:
+        - validations_failed is defined and validations_failed
+      failed_when: true
+
+  rescue:
+    - debug:
+        msg: "Play aborted, see errors above"
+      changed_when: true
+
+    - meta: end_play
