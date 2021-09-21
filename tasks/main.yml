@@ -1,7 +1,7 @@
 ---
 - include_tasks: validations-initial.yml
-- include_tasks: validations.yml
 - include_tasks: validations-image.yml
+- include_tasks: validations.yml
 - include_tasks: defaults-get.yml
 - include_tasks: virt-list.yml
 - include_tasks: net-list.yml

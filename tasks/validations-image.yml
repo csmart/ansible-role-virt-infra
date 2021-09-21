@@ -1,67 +1,21 @@
 ---
-## Check that we have images for each guest
-## If not, download it, but only once for all VMs that have the same image
-## (multiple VMs might use the same image)
-
-- name: Validate images
+- name: Download images
   block:
-    ## Create unique list of dictionaries for all images
-    - name: Create dict of distro images per KVM host
-      set_fact:
-        virt_infra_distro_images: "{{ virt_infra_distro_images | default([]) + [{ 'image' : hostvars[item].virt_infra_distro_image, 'url': hostvars[item].virt_infra_distro_image_url, 'checksum': hostvars[item].virt_infra_distro_image_checksum, 'algorithm': hostvars[item].virt_infra_distro_image_checksum_algorithm | default('sha1') }] }}"
-      when:
-        - inventory_hostname in groups['kvmhost']
-        - hostvars[item].inventory_hostname not in groups['kvmhost']
-        - hostvars[item].kvmhost == inventory_hostname
-        - hostvars[item].virt_infra_state != "undefined"
-        - hostvars[item].virt_infra_distro_image_url is defined and hostvars[item].virt_infra_distro_image_url
-        - hostvars[item].virt_infra_distro_image_checksum is defined and hostvars[item].virt_infra_distro_image_checksum
-      with_items: "{{ play_hosts }}"
-
-    - name: debug distro list
-      debug: var=virt_infra_distro_images
-
-    - name: debug distro list
-      debug: var=item
-      when:
-        - inventory_hostname in groups['kvmhost']
-      with_items: "{{ virt_infra_distro_images | unique }}"
-
-    - name: debug distro list
+    - name: debug
       debug:
-        msg: "{{ virt_infra_distro_images | sort(attribute='image') |first }}"
+        msg: "{{ item.key }}  {{ item.value.url }} {{ item.value.checksum }}"
+      with_dict: "{{ virt_infra_host_images }}"
       when:
         - inventory_hostname in groups['kvmhost']
 
     - meta: pause
 
-    - name: "KVM host: Test for distro images"
-      stat:
-        path: "{{ hostvars[kvmhost].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ virt_infra_distro_image }}"
-      register: result_base_image
-      delegate_to: "{{ kvmhost }}"
-      become: true
-      when:
-        - inventory_hostname not in groups['kvmhost']
-        - virt_infra_state != "undefined"
-
-    - name: Create temporary dir to download distro image
-      tempfile:
-        path: "{{ hostvars[kvmhost].virt_infra_host_image_path | default(virt_infra_host_image_path) }}"
-        state: directory
-        suffix: distro
-      register: result_distrodir
-      become: true
-      when:
-        - inventory_hostname not in groups['kvmhost']
-        - virt_infra_state != "undefined"
-      delegate_to: "{{ kvmhost }}"
 
     ## Download the image if required variables exist
     ## ** DO NOT USE checksum HERE ** (we will do checksums separately)
     ## If the checksum changes down the track it will delete images that don't match
     ## That will be catastrophic for existing guests using it as a backing image
-    - name: "Guests: Download distro disk image to KVM host"
+    - name: "KVM host: Download distro disk images"
       get_url:
         url: "{{ virt_infra_distro_image_url }}"
         dest: "{{ hostvars[kvmhost].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ virt_infra_distro_image }}"
@@ -77,8 +31,7 @@
       delegate_to: "{{ kvmhost }}"
       until: result_image_download is succeeded
       when:
-        - inventory_hostname not in groups['kvmhost']
-        - virt_infra_state != "undefined"
+        - inventory_hostname in groups['kvmhost']
         - not result_base_image.stat.exists
         - virt_infra_distro_image_url is defined and virt_infra_distro_image_url
         - virt_infra_distro_image_checksum is defined and virt_infra_distro_image_checksum
@@ -95,17 +48,6 @@
 
     # Delete the file if failed
 
-    - name: "Guests: Check that distro disk image exists on KVM host"
-      set_fact:
-        validations_failed: "{{ validations_failed|default([]) + \
-        [ hostvars[kvmhost].virt_infra_host_image_path | default(virt_infra_host_image_path) + '/' + \
-        virt_infra_distro_image + ' missing.{% if virt_infra_distro_image_url is defined and virt_infra_distro_image_url %} \
-        Download from {{ virt_infra_distro_image_url }}{% endif %}'] }}"
-      when:
-        - inventory_hostname not in groups['kvmhost']
-        - not result_base_image.stat.exists
-        - result_image_download is not defined or (result_image_download is defined and result_image_download.failed)
-      changed_when: true
 
     - name: Validation failures
       debug:
