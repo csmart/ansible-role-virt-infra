@@ -8,6 +8,19 @@
       when:
         - inventory_hostname in groups['kvmhost']
 
+    - name: "KVM host: Test for distro images"
+      stat:
+        path: "{{ virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ item.key }}"
+      register: result_kvmhost_images
+      when:
+        - inventory_hostname in groups['kvmhost']
+      with_dict: "{{ virt_infra_host_images }}"
+
+
+    - name: debug
+      debug: var=result_kvmhost_images
+
+
     - meta: pause
 
 
