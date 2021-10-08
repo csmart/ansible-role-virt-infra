@@ -34,11 +34,7 @@
       Host {{ vm_ip }} {{ inventory_hostname }}
         Hostname  {{ vm_ip }}
         User {{ virt_infra_user | default(hostvars[kvmhost].ansible_env.USER) }}
-      {% if virt_infra_ssh_keys is defined and virt_infra_ssh_keys %}
-      {% for key in virt_infra_ssh_keys %}
-      {{ "  IdentityFile " + key }}
-      {% endfor %}
-      {% elif virt_infra_ssh_keys is not defined or virt_infra_ssh_keys is defined and not virt_infra_ssh_keys %}
+      {% if virt_infra_ssh_keys is not defined or virt_infra_ssh_keys is defined and not virt_infra_ssh_keys %}
       {% if hostvars[kvmhost].result_ssh_key_list.files is defined and hostvars[kvmhost].result_ssh_key_list.files %}
       {% for file in hostvars[kvmhost].result_ssh_key_list.files %}
       {{ "  IdentityFile " + file.path.split('.pub')[0] }}
