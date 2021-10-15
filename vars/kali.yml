@@ -1,0 +1,25 @@
+---
+# Debian specific vars
+virt_infra_host_pkgs_kvm:
+  - libvirt-clients
+  - libvirt-daemon-system
+  - qemu-kvm
+
+virt_infra_host_pkgs_deps:
+  - cloud-image-utils
+  - dnsmasq
+  - genisoimage
+  - libguestfs-tools
+  - libosinfo-bin
+  - libvirt-clients
+  - python3-libvirt
+  - python3-lxml
+  - python3-netaddr
+  - python3-pip
+  - qemu-utils
+  - virtinst
+
+virt_infra_host_image_owner: libvirt-qemu
+virt_infra_host_image_group: libvirt-qemu
+
+virt_infra_security_driver: apparmor
