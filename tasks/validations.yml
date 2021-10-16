@@ -23,7 +23,14 @@
 
     # Load distro specific vars here
     - name: "KVM host only: Load distro specific vars"
-      include_vars: "{{ ansible_distribution.split(' ', 1)[0] | lower }}.yml"
+      include_vars: "{{ lookup('first_found', params) }}"
+      vars:
+        params:
+          files:
+            - "{{ ansible_distribution.split(' ', 1)[0] | lower }}.yml"
+            - "{{ ansible_os_family.split(' ', 1)[0] | lower }}.yml"
+          paths:
+            - vars
       when:
         - inventory_hostname in groups['kvmhost']
 
