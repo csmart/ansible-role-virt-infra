@@ -5,7 +5,7 @@
 		* [KVM host](#kvm-host)
 			* [Fedora](#fedora)
 			* [CentOS 7](#centos-7)
-			* [CentOS 8](#centos-8)
+			* [CentOS Stream 8](#centos-stream-8)
 			* [Debian](#debian)
 			* [Ubuntu](#ubuntu)
 			* [openSUSE](#opensuse)
@@ -64,7 +64,7 @@ specify the MAC for each interface if you require.
 
 This supports various distros and uses their qcow2 [cloud
 images](#guest-cloud-images) for convenience (although you could use your own
-images). I've tested CentOS, Fedora, Debian, Ubuntu and openSUSE.
+images). I've tested CentOS Stream, Fedora, Debian, Ubuntu and openSUSE.
 
 The qcow2 cloud base images to use for guests are specified as variables in the
 inventory and should exist under libvirt images directory (default is
@@ -102,7 +102,7 @@ guests and pass the CPU through (supports nested virtualisation).
 You may need Ansible and Jinja >= 2.8 because this does things like 'equalto'
 comparisons.
 
-I have tested this on CentOS 8, Fedora 3x, Debian 10, Ubuntu Bionic/Eoan and
+I have tested this on CentOS Stream 8, Fedora 3x, Debian 10, Ubuntu Bionic/Eoan and
 openSUSE 15 hosts, but other Linux machines probably work.
 
 At least one SSH key pair on your KVM host (the Ansible will generate one if
@@ -192,7 +192,7 @@ qemu-img \
 virt-install
 ```
 
-#### CentOS 8
+#### CentOS Stream 8
 
 ```bash
 # Create SSH key if you don't have one
@@ -575,8 +575,8 @@ I have tested the following guests successfully:
 
 * CentOS 7
   * https://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud.qcow2
-* CentOS 8
-  * https://cloud.centos.org/centos/8/x86_64/images/CentOS-8-GenericCloud-8.1.1911-20200113.3.x86_64.qcow2
+* CentOS Stream 8
+  * https://cloud.centos.org/centos/8-stream/x86_64/images/CentOS-Stream-GenericCloud-8-20210603.0.x86_64.qcow2
 * Fedora 33
   * https://download.fedoraproject.org/pub/fedora/linux/releases/33/Cloud/x86_64/images/Fedora-Cloud-Base-33-1.2.x86_64.qcow2
 * Fedora 34
@@ -605,7 +605,7 @@ The role defaults are set in the _defaults/main.yml_ file.
 
 These can be overridden at host or hostgroup level, as necessary. However, the
 role is designed to pretty much work out of the box (so long as you have the
-default CentOS image).
+default CentOS Stream 8 image).
 
 ```yaml
 ---
@@ -680,7 +680,7 @@ virt_infra_disks:
 #   io: "{{ virt_infra_disk_io }}"
 #   cache: "{{ virt_infra_disk_cache }}"
 
-# Default distro is CentOS 8, override in guests or groups
+# Default distro is CentOS Stream 8, override in guests or groups
 virt_infra_distro_image: "CentOS-Stream-GenericCloud-8-20210603.0.x86_64.qcow2"
 
 # Determine supported variants on your KVM host with command, "osinfo-query os"
@@ -689,10 +689,10 @@ virt_infra_distro_image: "CentOS-Stream-GenericCloud-8-20210603.0.x86_64.qcow2"
 #virt_infra_variant: "centos7.0"
 
 # These distro vars are here for reference and convenience
-virt_infra_distro: "centos"
-virt_infra_distro_release: "7"
-virt_infra_distro_image_url: "https://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud.qcow2"
-virt_infra_distro_image_checksum_url: "https://cloud.centos.org/centos/7/images/sha256sum.txt"
+virt_infra_distro: "centos-stream"
+virt_infra_distro_release: "8"
+virt_infra_distro_image_url: "https://cloud.centos.org/centos/8-stream/x86_64/images/CentOS-Stream-GenericCloud-8-20210603.0.x86_64.qcow2"
+virt_infra_distro_image_checksum_url: "https://cloud.centos.org/centos/8-stream/x86_64/images/CHECKSUM"
 
 ## KVM host related
 
@@ -818,7 +818,7 @@ kvmhost:
           dhcp_end: "192.168.113.99"
 ```
 
-Here's an example guest inventory called _simple.yml_ which defines CentOS 8
+Here's an example guest inventory called _simple.yml_ which defines CentOS Stream 8
 guests in a group called _simple_, using the role defaults.
 
 ```
@@ -916,7 +916,7 @@ kvmhost:
 To have a VM land on a specific KVM host, you must add the variable `kvmhost`
 with a string that matches a KVM host from the `kvmhost` group.
 
-For example, six CentOS hosts across three KVM hosts:
+For example, six CentOS Stream 8 hosts across three KVM hosts:
 
 ```yaml
 ---
@@ -943,7 +943,7 @@ valid and that any specified KVM host for a VM is in the `kvmhost` group.
 To group VMs on certain KVM hosts, consider making child groups and specify
 kvmhost at the child group level.
 
-For example, those CentOS guests again:
+For example, those CentOS Stream 8 guests again:
 
 ```yaml
 ---
@@ -995,7 +995,7 @@ Here is an example playbook _virt-infra.yml_ which calls the role.
 
 ### Grab the cloud image
 
-Before we run the playbook, download the CentOS cloud image.
+Before we run the playbook, download the CentOS Stream 8 cloud image.
 
 ```bash
 curl -O https://cloud.centos.org/centos/8/x86_64/images/CentOS-Stream-GenericCloud-8-20210603.0.x86_64.qcow2
