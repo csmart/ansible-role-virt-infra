@@ -64,7 +64,17 @@ specify the MAC for each interface if you require.
 
 This supports various distros and uses their qcow2 [cloud
 images](#guest-cloud-images) for convenience (although you could use your own
-images). I've tested CentOS Stream, Fedora, Debian, Ubuntu and openSUSE.
+images). I've tested CentOS Stream, Debian, Fedora, openSUSE, RHEL and Ubuntu.
+
+For RHEL, set the `virt_infra_sm_creds` variable (perhaps from a vault) in
+order to temporarily register the machine to Red Hat portal when preparing the
+disk. This follows the [format from
+virt-builder](https://libguestfs.org/virt-builder.1.html#subscription-manager),
+such as:
+
+```yaml
+- virt_infra_sm_creds: MYUSER:password:MYPASSWORD
+```
 
 The qcow2 cloud base images to use for guests are specified as variables in the
 inventory and should exist under libvirt images directory (default is
