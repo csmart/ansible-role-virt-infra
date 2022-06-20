@@ -71,7 +71,7 @@ virt_infra_disks:
 #   cache: "{{ virt_infra_disk_cache }}"
 
 # Default distro is CentOS Stream 8, override in guests or groups
-virt_infra_distro_image: "CentOS-Stream-GenericCloud-8-20210603.0.x86_64.qcow2"
+virt_infra_distro_image: "CentOS-Stream-GenericCloud-8-20220125.1.x86_64.qcow2"
 
 # Determine supported variants on your KVM host with command, "osinfo-query os"
 # This doesn't really make much difference to the guest, maybe slightly different bus
@@ -81,7 +81,7 @@ virt_infra_distro_image: "CentOS-Stream-GenericCloud-8-20210603.0.x86_64.qcow2"
 # These distro vars are here for reference and convenience
 virt_infra_distro: "centos-stream"
 virt_infra_distro_release: "8"
-virt_infra_distro_image_url: "https://cloud.centos.org/centos/8-stream/x86_64/images/CentOS-Stream-GenericCloud-8-20210603.0.x86_64.qcow2"
+virt_infra_distro_image_url: "https://cloud.centos.org/centos/8-stream/x86_64/images/CentOS-Stream-GenericCloud-8-20220125.1.x86_64.qcow2"
 virt_infra_distro_image_checksum_url: "https://cloud.centos.org/centos/8-stream/x86_64/images/CHECKSUM"
 
 ## KVM host related
