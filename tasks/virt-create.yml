@@ -51,6 +51,8 @@
     --os-type linux
     {% if virt_infra_variant is defined and virt_infra_variant %}
     --os-variant {{ virt_infra_variant }}
+    {% else %}
+    --osinfo detect=on,require=off
     {% endif %}
     --memory {{ virt_infra_ram }},maxmemory={{ virt_infra_ram_max }}
     --rng /dev/urandom
