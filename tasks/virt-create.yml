@@ -33,7 +33,7 @@
     {% endif %}
     --disk {{ hostvars[kvmhost].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-cloudinit.iso,device=cdrom,bus=scsi,format=iso
     --channel unix,target_type=virtio,name=org.qemu.guest_agent.0
-    --graphics spice
+    --graphics {{ virt_infra_graphics }}
     --machine {{ virt_infra_machine_type }}
     --name {{ inventory_hostname }}
     {% for network in virt_infra_networks %}
