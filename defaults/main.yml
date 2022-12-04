@@ -27,6 +27,9 @@ virt_infra_cpus_max: "{{ virt_infra_cpus }}"
 virt_infra_cpu_model: "host-passthrough"
 virt_infra_machine_type: "q35"
 
+# What graphics server to use, spice or vnc
+virt_infra_graphics: spice
+
 # SSH keys are a list, you can add more than one
 # If not specified, we default to all public keys on KVM host
 virt_infra_ssh_keys: []
