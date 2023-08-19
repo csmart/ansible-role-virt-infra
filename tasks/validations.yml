@@ -76,6 +76,31 @@
         - result_deps_install.failed
       changed_when: true
 
+    - name: "KVM host only: Install custom packages"
+      package:
+        name: "{{ virt_infra_host_pkgs_custom }}"
+        state: present
+      become: true
+      register: result_custom_install
+      retries: 30
+      delay: 5
+      until: result_custom_install is succeeded
+      when:
+        - inventory_hostname in groups['kvmhost']
+        - virt_infra_host_pkgs_custom is defined
+        - virt_infra_host_pkgs_custom is not mapping
+        - virt_infra_host_pkgs_custom is iterable
+        - virt_infra_host_pkgs_custom is not string
+      ignore_errors: true
+
+    - name: "KVM host only: Advise unable to install custom packages"
+      set_fact:
+        validations_failed: "{{ validations_failed|default([]) + ['KVM host: Failed to install custom packages'] }}"
+      when:
+        - inventory_hostname in groups['kvmhost']
+        - result_custom_install.failed is defined and result_custom_install.failed
+      changed_when: true
+
     - name: "KVM host only: Test for required programs"
       shell: 'hash {{ item }} 2>/dev/null'
       become: true

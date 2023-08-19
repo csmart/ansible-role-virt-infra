@@ -1,32 +1,32 @@
 <!-- vim-markdown-toc GFM -->
 
 * [Ansible Role: Virtual Infrastructure](#ansible-role-virtual-infrastructure)
-	* [Requirements](#requirements)
-		* [KVM host](#kvm-host)
-			* [Fedora](#fedora)
-			* [CentOS 7](#centos-7)
-			* [CentOS Stream 8](#centos-stream-8)
-			* [Debian](#debian)
-			* [Ubuntu](#ubuntu)
-			* [openSUSE](#opensuse)
-			* [Using routed networks](#using-routed-networks)
-			* [Configuring bridges with NetworkManager](#configuring-bridges-with-networkmanager)
-				* [Linux bridge](#linux-bridge)
-					* [Using Linux bridge in inventory](#using-linux-bridge-in-inventory)
-				* [Open vSwitch (OVS) bridge](#open-vswitch-ovs-bridge)
-					* [Using ovs-bridge in inventory](#using-ovs-bridge-in-inventory)
-		* [Guest Cloud images](#guest-cloud-images)
-	* [Role Variables](#role-variables)
-	* [Dependencies](#dependencies)
-	* [Example Inventory](#example-inventory)
-		* [Multiple KVM hosts](#multiple-kvm-hosts)
-	* [Example Playbook](#example-playbook)
-		* [Grab the cloud image](#grab-the-cloud-image)
-		* [Run the playbook](#run-the-playbook)
-		* [Cleanup](#cleanup)
-		* [Post setup configuration](#post-setup-configuration)
-	* [License](#license)
-	* [Author Information](#author-information)
+    * [Requirements](#requirements)
+        * [KVM host](#kvm-host)
+            * [Fedora](#fedora)
+            * [CentOS 7](#centos-7)
+            * [CentOS Stream 8](#centos-stream-8)
+            * [Debian](#debian)
+            * [Ubuntu](#ubuntu)
+            * [openSUSE](#opensuse)
+            * [Using routed networks](#using-routed-networks)
+            * [Configuring bridges with NetworkManager](#configuring-bridges-with-networkmanager)
+                * [Linux bridge](#linux-bridge)
+                    * [Using Linux bridge in inventory](#using-linux-bridge-in-inventory)
+                * [Open vSwitch (OVS) bridge](#open-vswitch-ovs-bridge)
+                    * [Using ovs-bridge in inventory](#using-ovs-bridge-in-inventory)
+        * [Guest Cloud images](#guest-cloud-images)
+    * [Role Variables](#role-variables)
+    * [Dependencies](#dependencies)
+    * [Example Inventory](#example-inventory)
+        * [Multiple KVM hosts](#multiple-kvm-hosts)
+    * [Example Playbook](#example-playbook)
+        * [Grab the cloud image](#grab-the-cloud-image)
+        * [Run the playbook](#run-the-playbook)
+        * [Cleanup](#cleanup)
+        * [Post setup configuration](#post-setup-configuration)
+    * [License](#license)
+    * [Author Information](#author-information)
 
 <!-- vim-markdown-toc -->
 
@@ -142,6 +142,13 @@ useful.
 and other required packages on supported distros and also make sure the
 libvirtd is running.
 
+There is also a variable `virt_infra_host_pkgs_custom` which takes a list of
+packages to install on the host, should you need or want the role to install
+some extra packages for you.
+
+Note that the variable must be a list and the host must be able to install the
+packages, i.e. the package names must be correct for the host and if the host
+is running RHEL, it must be registered.
 
 #### Fedora
 
