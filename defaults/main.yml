@@ -137,3 +137,9 @@ virt_infra_host_deps:
 virt_infra_guest_deps:
   - cloud-init
   - qemu-guest-agent
+
+# Automatically add entries to /etc/hosts on the kvmhost
+virt_infra_add_etc_hosts: true
+
+# Automatically add entries to $HOME/.ssh/config on the kvmhost
+virt_infra_add_ssh_config: true
