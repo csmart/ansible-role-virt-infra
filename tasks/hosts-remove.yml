@@ -14,7 +14,7 @@
   become: true
   delegate_to: "{{ kvmhost }}"
   when:
-    - virt_infra_add_etc_hosts
+    - virt_infra_add_etc_hosts | default(virt_infra_add_etc_hosts) | bool
     - inventory_hostname not in groups['kvmhost']
     - virt_infra_state | default(virt_infra_state) == "undefined"
   throttle: 1
@@ -47,7 +47,7 @@
   become: false
   delegate_to: "{{ kvmhost }}"
   when:
-    - virt_infra_add_ssh_config
+    - virt_infra_add_ssh_config | default(virt_infra_add_ssh_config) | bool
     - inventory_hostname not in groups['kvmhost']
     - virt_infra_state | default(virt_infra_state) == "undefined"
   throttle: 1
