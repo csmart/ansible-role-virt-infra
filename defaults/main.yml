@@ -28,7 +28,7 @@ virt_infra_cpu_model: "host-passthrough"
 virt_infra_machine_type: "q35"
 
 # What boot mode to use, legacy or uefi
-virt_infra_graphics: legacy
+virt_infra_boot_mode: legacy
 
 # What graphics server to use, spice or vnc
 virt_infra_graphics: spice
