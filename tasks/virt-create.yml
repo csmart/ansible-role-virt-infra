@@ -60,6 +60,13 @@
     --sound none
     --vcpus {{ virt_infra_cpus }}{% if virt_infra_cpus_max is defined and virt_infra_cpus_max %},maxvcpus={{ virt_infra_cpus_max }}{% endif %}
     --virt-type kvm
+    {% if virt_infra_boot_mode is defined and virt_infra_boot_mode == "uefi" %}
+    --boot loader.readonly=yes
+    --boot loader.type=pflash
+    --boot loader.secure=no
+    --boot loader=/usr/share/OVMF/OVMF_CODE.secboot.fd
+    --boot nvram.template=/usr/share/OVMF/OVMF_VARS.fd
+    {% endif %}
   become: true
   register: result_vm_create
   retries: 10
