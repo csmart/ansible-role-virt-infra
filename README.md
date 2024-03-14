@@ -761,6 +761,10 @@ virt_infra_host_deps:
 virt_infra_guest_deps:
   - cloud-init
   - qemu-guest-agent
+
+# Array of ids of devices to be passed to the vm
+# (see virt-install doc for --host-device option)
+virt_infra_host_devices: []
 ```
 
 ## Dependencies
