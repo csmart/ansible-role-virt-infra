@@ -59,6 +59,11 @@
     --serial pty
     --sound none
     --vcpus {{ virt_infra_cpus }}{% if virt_infra_cpus_max is defined and virt_infra_cpus_max %},maxvcpus={{ virt_infra_cpus_max }}{% endif %}
+    {% if virt_infra_host_devices is defined and virt_infra_host_devices %}
+    {% for hostdev in virt_infra_host_devices %}
+    --host-device {{ hostdev }}
+    {% endfor %}
+    {% endif %}
     --virt-type kvm
   become: true
   register: result_vm_create
