@@ -33,3 +33,8 @@ runcmd:
 
 # To know when to log in, if reading console
 final_message: "SYSTEM READY TO LOG IN"
+
+{% if virt_infra_extra_user_data is defined and virt_infra_extra_user_data %}
+# Extra user data
+{{ virt_infra_extra_user_data }}
+{% endif %}

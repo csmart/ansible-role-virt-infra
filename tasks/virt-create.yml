@@ -48,7 +48,6 @@
     --noreboot
     --noautoconsole
     --events on_reboot=restart
-    --os-type linux
     {% if virt_infra_variant is defined and virt_infra_variant %}
     --os-variant {{ virt_infra_variant }}
     {% else %}

@@ -4,7 +4,7 @@
 # because VMs are started in parallel and multiple VMs will try to start the pool
 # This assumes the pool is called default and uses the path specified in vars, /var/lib/libvirt/images by default
 - name: List storage pools
-  virt_pool:
+  community.libvirt.virt_pool:
     command: list_pools
   register: result_pool_list
   become: true
@@ -12,7 +12,7 @@
     - inventory_hostname in groups['kvmhost']
 
 - name: Get info on storage pools
-  virt_pool:
+  community.libvirt.virt_pool:
     command: info
   register: result_pool_info
   become: true
@@ -20,7 +20,7 @@
     - inventory_hostname in groups['kvmhost']
 
 - name: Define storage pool
-  virt_pool:
+  community.libvirt.virt_pool:
     command: define
     name: default
     xml: '{{ lookup("template", "virt-pool.j2") }}'
@@ -28,10 +28,10 @@
   become: true
   when:
     - inventory_hostname in groups['kvmhost']
-    - '"default" not in result_pool_list'
+    - '"default" not in result_pool_list["list_pools"]'
 
 - name: Build storage pool
-  virt_pool:
+  community.libvirt.virt_pool:
     command: build
     name: default
   become: true
@@ -43,7 +43,7 @@
   ignore_errors: true
 
 - name: Ensure storage pool is active
-  virt_pool:
+  community.libvirt.virt_pool:
     state: "active"
     name: "default"
   become: true

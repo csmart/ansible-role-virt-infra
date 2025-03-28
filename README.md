@@ -613,6 +613,12 @@ So that we can configure the guest and get its IP, both `cloud-init` and
 This can be changed or overridden using the `virt_infra_guest_deps` variable,
 which is a list.
 
+Cloud-init is configured so that passwords and networking can be set up.
+Additional cloud-init root level setup can be attached using the
+`virt_infra_extra_user_data` variable. Using the heredoc format is useful for
+multi-line content. Take care not to duplicate any keys already defined in
+[the template](templates/user-data.j2) as it will either error or override.
+
 Sysprep is also run on the guest image to make sure it's clean of things like
 old MAC addresses.
 
@@ -761,6 +767,10 @@ virt_infra_host_deps:
 virt_infra_guest_deps:
   - cloud-init
   - qemu-guest-agent
+
+# Extra cloud-init data to pass into the user-data for the guest.
+virt_infra_extra_user_data: ""
+
 ```
 
 ## Dependencies
