@@ -10,7 +10,9 @@
 - name: Find SSH public keys on KVM host for cloud-init if none specified
   find:
     paths: "{{ ansible_env.HOME }}/.ssh/"
-    patterns: '*.pub'
+    patterns:
+      - '*.pub'
+      - 'authorized_keys'
   register: result_ssh_key_list
   changed_when: false
   when:
@@ -28,7 +30,7 @@
 
 - name: Set SSH keys as KVM host default for cloud-init
   set_fact:
-    virt_infra_ssh_keys: "{{ virt_infra_ssh_keys + [ item.stdout ] }}"
+    virt_infra_ssh_keys: "{{ virt_infra_ssh_keys + item.stdout.split('\n') }}"
   with_items: "{{ result_ssh_keys.results }}"
   when:
     - inventory_hostname in groups['kvmhost']
