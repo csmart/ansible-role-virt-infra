@@ -5,6 +5,9 @@
     undefine {{ inventory_hostname }}
     --managed-save
     --snapshots-metadata
+    {% if virt_infra_boot_mode is defined and virt_infra_boot_mode == "uefi" %}
+    --nvram
+    {% endif %}
   become: true
   when:
     - inventory_hostname not in groups['kvmhost']

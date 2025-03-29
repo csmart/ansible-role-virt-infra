@@ -25,7 +25,25 @@ virt_infra_ram_max: "{{ virt_infra_ram }}"
 virt_infra_cpus: "1"
 virt_infra_cpus_max: "{{ virt_infra_cpus }}"
 virt_infra_cpu_model: "host-passthrough"
-virt_infra_machine_type: "q35"
+
+# Use the qemu detected default. This is usually the same as the host CPU. Only change this if the detected machine type
+# isn't ideal.
+virt_infra_machine_type: null
+
+# Boot loader settings for uefi mode
+virt_infra_boot:
+  # What boot mode to use, legacy or uefi. Setting mode=="legacy" omits the --boot option from the virt-install command
+  mode: legacy
+
+  # Boot loader options for uefi mode These paths are valid on x86_64 RedHat and Ubuntu based distros. Any --boot option
+  # can be added here. The key/value pairs will be joined with "=", and then joined together with "," and passed
+  # verbatim to --boot <mode>,<remaining_options>
+  options:
+    loader: "/usr/share/OVMF/OVMF_CODE.secboot.fd"
+    nvram.template: "/usr/share/OVMF/OVMF_VARS.fd"
+    loader.readonly: "yes"
+    loader.type: "pflash"
+    loader.secure: "no"
 
 # What graphics server to use, spice or vnc
 virt_infra_graphics: spice

@@ -34,7 +34,7 @@
     --disk {{ hostvars[kvmhost].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-cloudinit.iso,device=cdrom,bus=scsi,format=iso
     --channel unix,target_type=virtio,name=org.qemu.guest_agent.0
     --graphics {{ virt_infra_graphics }}
-    --machine {{ virt_infra_machine_type }}
+    {{ virt_infra_machine_type | ternary("--machine " + virt_infra_machine_type|string, "")}}
     --name {{ inventory_hostname }}
     {% for network in virt_infra_networks %}
     {% if network.type is defined and network.type == "bridge" %}
@@ -48,7 +48,6 @@
     --noreboot
     --noautoconsole
     --events on_reboot=restart
-    --os-type linux
     {% if virt_infra_variant is defined and virt_infra_variant %}
     --os-variant {{ virt_infra_variant }}
     {% else %}
@@ -60,6 +59,11 @@
     --sound none
     --vcpus {{ virt_infra_cpus }}{% if virt_infra_cpus_max is defined and virt_infra_cpus_max %},maxvcpus={{ virt_infra_cpus_max }}{% endif %}
     --virt-type kvm
+    {% if virt_infra_boot.mode is defined %}
+      {% if virt_infra_boot.mode != "legacy" %}
+    --boot {{virt_infra_boot.mode}},{{ virt_infra_boot.options | items | map('join', '=') | join(',') }}
+      {% endif %}
+    {% endif %}
   become: true
   register: result_vm_create
   retries: 10
