@@ -1,7 +1,7 @@
 ---
 # Only run on KVM host
 - name: Stop networks
-  virt_net:
+  community.libvirt.virt_net:
     state: inactive
     name: "{{ item.name }}"
   with_items: "{{ virt_infra_host_networks.absent }}"
@@ -12,7 +12,7 @@
   become: true
 
 - name: Undefine networks
-  virt_net:
+  community.libvirt.virt_net:
     command: undefine
     name: "{{ item.name }}"
     xml: '{{ lookup("template", "templates/virt-network.j2") }}'

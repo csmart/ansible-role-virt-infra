@@ -7,7 +7,7 @@
 # Ideally, boot should be defined first in virt_infra_disks so that it's /dev/sda
 
 - name: Check if boot disk already exists
-  stat:
+  ansible.builtin.stat:
     path: "{{ hostvars[kvmhost].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-boot.qcow2"
   register: result_stat_boot
   when:
@@ -16,7 +16,7 @@
   delegate_to: "{{ kvmhost }}"
 
 - name: Check if boot disk is set to keep
-  set_fact:
+  ansible.builtin.set_fact:
     keep_boot: "{{ item.keep }}"
   with_items: "{{ virt_infra_disks }}"
   when:
@@ -26,7 +26,7 @@
     - item.keep is defined and item.keep
 
 - name: Create boot disk for VM
-  command: >
+  ansible.builtin.command: >
     qemu-img
     {% if item.clone is defined and item.clone %}
     convert -f qcow2 -O qcow2
@@ -48,7 +48,7 @@
   with_items: "{{ virt_infra_disks }}"
 
 - name: Resize boot disk for VM
-  command: >
+  ansible.builtin.command: >
     qemu-img
     resize
     {{ hostvars[kvmhost].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-{{ item.name }}.qcow2
@@ -64,7 +64,7 @@
   with_items: "{{ virt_infra_disks }}"
 
 - name: Create additional disks for VM
-  command: >
+  ansible.builtin.command: >
     qemu-img create -f qcow2
     {{ hostvars[kvmhost].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-{{ item.name }}.qcow2
     {{ item.size | default(virt_infra_disk_size) }}G
@@ -83,7 +83,7 @@
 # Due to the way NVME works with qemu (as args),
 # we need specific permissions on the image
 - name: Set permissions on NVMe disk images
-  file:
+  ansible.builtin.file:
     path: "{{ hostvars[kvmhost].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-{{ item.name }}.qcow2"
     owner: "{{ hostvars[kvmhost].virt_infra_host_image_owner | default('root') }}"
     group: "{{ hostvars[kvmhost].virt_infra_host_image_group | default('qemu') }}"
@@ -102,7 +102,7 @@
 
 ## Create cloudinit iso
 - name: Create temporary dir to build cloud-init config
-  tempfile:
+  ansible.builtin.tempfile:
     state: directory
     suffix: cloudinit
   register: result_tempdir
@@ -114,7 +114,7 @@
   delegate_to: "{{ kvmhost }}"
 
 - name: Create cloud init meta-data for guest
-  template:
+  ansible.builtin.template:
     src: templates/meta-data.j2
     dest: "{{ result_tempdir.path }}/meta-data"
     mode: '0644'
@@ -126,7 +126,7 @@
   delegate_to: "{{ kvmhost }}"
 
 - name: Create cloud init user-data for guest
-  template:
+  ansible.builtin.template:
     src: templates/user-data.j2
     dest: "{{ result_tempdir.path }}/user-data"
     mode: '0644'
@@ -138,7 +138,7 @@
   delegate_to: "{{ kvmhost }}"
 
 - name: Create cloud init network-config for guest
-  template:
+  ansible.builtin.template:
     src: templates/network-config.j2
     dest: "{{ result_tempdir.path }}/network-config"
     mode: '0644'
@@ -151,7 +151,7 @@
   delegate_to: "{{ kvmhost }}"
 
 - name: Make cloud-init iso for guest
-  shell: >
+  ansible.builtin.shell: >
     {{ hostvars[kvmhost].virt_infra_mkiso_cmd | default(virt_infra_mkiso_cmd) }} -J -l -R -V "cidata" -iso-level 4
     -o {{ hostvars[kvmhost].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-cloudinit.iso
     {{ result_tempdir.path }}/user-data
@@ -168,7 +168,7 @@
   delegate_to: "{{ kvmhost }}"
 
 - name: Clean up temporary dir
-  file:
+  ansible.builtin.file:
     path: "{{ result_tempdir.path }}"
     state: absent
   when:
@@ -178,7 +178,7 @@
   delegate_to: "{{ kvmhost }}"
 
 - name: Run custom shell commands in guest disk
-  command: >
+  ansible.builtin.command: >
     virt-customize
     -a {{ hostvars[kvmhost].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-boot.qcow2
     {% if virt_infra_disk_cmd is defined and virt_infra_disk_cmd %}
@@ -200,7 +200,7 @@
   delegate_to: "{{ kvmhost }}"
 
 - name: Install required packages into guest disk
-  command: >
+  ansible.builtin.command: >
     virt-customize
     -a {{ hostvars[kvmhost].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-boot.qcow2
     {% if virt_infra_sm_creds is defined and virt_infra_sm_creds %}
@@ -224,7 +224,7 @@
   delegate_to: "{{ kvmhost }}"
 
 - name: Remove RHEL registration
-  command: >
+  ansible.builtin.command: >
     virt-customize
     -a {{ hostvars[kvmhost].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-boot.qcow2
     {% if virt_infra_sm_creds is defined and virt_infra_sm_creds %}
@@ -245,7 +245,7 @@
   delegate_to: "{{ kvmhost }}"
 
 - name: Sysprep guest disk
-  command: >
+  ansible.builtin.command: >
     virt-sysprep
     --selinux-relabel
     {% if virt_infra_root_password is defined and virt_infra_root_password %}

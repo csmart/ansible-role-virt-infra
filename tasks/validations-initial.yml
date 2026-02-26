@@ -2,7 +2,7 @@
 # Guests need to have a KVM host to deploy to
 # If it is not defined (or defined to empty string), we default to the first kvmhost in the kvmhost group.
 - name: "Guests: Ensure a KVM host is defined"
-  set_fact:
+  ansible.builtin.set_fact:
     kvmhost: "{{ groups['kvmhost'][0] }}"
   when:
     - inventory_hostname not in groups['kvmhost']
@@ -26,7 +26,7 @@
     # Convert it to a list so we can easily check either 'kvmhost' or 'all' is there
     # I think this is a bit cleaner than regex and should catch other combinations
     - name: Convert --limit into a list for validation
-      set_fact:
+      ansible.builtin.set_fact:
         limit_list: "{{ ansible_limit.split(',') }}"
       delegate_to: "{{ groups['kvmhost'][0] }}"
       run_once: true
@@ -34,7 +34,7 @@
         - ansible_limit is defined
 
     - name: "Guests: Check that KVM host exists in inventory"
-      set_fact:
+      ansible.builtin.set_fact:
         validations_failed: "{{ validations_failed|default([]) + ['KVM host ' + kvmhost + ' not in kvmhost group'] }}"
       when:
         - inventory_hostname not in groups['kvmhost']
@@ -42,7 +42,7 @@
       changed_when: true
 
     - name: "Guests: Check that KVM host is in limit"
-      set_fact:
+      ansible.builtin.set_fact:
         validations_failed: "{{ validations_failed|default([]) + ['KVM host ' + kvmhost + ' not in limit, include --limit kvmhost option'] }}"
       when:
         - ansible_limit is defined
@@ -51,14 +51,14 @@
       changed_when: true
 
     - name: Validation failures
-      debug:
+      ansible.builtin.debug:
         msg: "{{ validations_failed|default('nothing') }}"
       when:
         - validations_failed is defined and validations_failed
       failed_when: true
 
   rescue:
-    - debug:
+    - ansible.builtin.debug:
         msg: "Play aborted, see errors above"
       changed_when: true
 

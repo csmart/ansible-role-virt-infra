@@ -103,7 +103,7 @@ different sizes with multiple networks, disks and even distros!
 All that's really needed is a Linux host, capable of running KVM, some guest
 images and a basic inventory. Ansible will do the rest (on supported distros).
 
-A working x86_64 KVM host where the user running Ansible can communicate with
+A working `x86_64` KVM host where the user running Ansible can communicate with
 `libvirtd` via `sudo`.
 
 It expects hardware support for KVM in the CPU so that we an create accelerated
@@ -179,8 +179,8 @@ virt-install
 
 CentOS 7 won't work until we have `libselinux-python3` package, which is coming in 7.8...
 
-* https://bugzilla.redhat.com/show_bug.cgi?id=1719978
-* https://bugzilla.redhat.com/show_bug.cgi?id=1756015
+* <https://bugzilla.redhat.com/show_bug.cgi?id=1719978>
+* <https://bugzilla.redhat.com/show_bug.cgi?id=1756015>
 
 But here are (hopefully) the rest of the steps for when it is available.
 
@@ -1094,7 +1094,7 @@ same inventory to do whatever you wanted with those machines...
 - hosts: all,!kvmhost
   tasks:
     - name: Upgrade all packages
-      package:
+      ansible.builtin.package:
         name: '*'
         state: latest
       become: true
@@ -1104,7 +1104,7 @@ same inventory to do whatever you wanted with those machines...
       until: result_package_update is succeeded
 
     - name: Install packages
-      package:
+      ansible.builtin.package:
         name:
           - git
           - tmux

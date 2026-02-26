@@ -7,7 +7,7 @@
 # Thus, while this should be run against the kvmhost host, it will show one of your guests
 
 - name: Update /etc/hosts to resolve new VMs
-  blockinfile:
+  ansible.builtin.blockinfile:
     path: /etc/hosts
     state: present
     marker: "# {mark} {{ inventory_hostname }} managed by virt_infra Ansible playbook"
@@ -24,10 +24,10 @@
 #  run_once: true
 
 - name: Add host to SSH config
-  blockinfile:
+  ansible.builtin.blockinfile:
     create: true
-    mode: 0600
-    state: present
+    mode: "0600"
+    state: "present"
     path: "{{ hostvars[kvmhost].ansible_env.HOME }}/.ssh/config"
     marker: "# {mark} {{ inventory_hostname }} managed by virt_infra Ansible playbook"
     block: |-

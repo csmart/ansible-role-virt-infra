@@ -1,7 +1,7 @@
 ---
 # Only run on KVM host
 - name: Define networks
-  virt_net:
+  community.libvirt.virt_net:
     command: define
     autostart: yes
     name: "{{ item.name }}"
@@ -15,7 +15,7 @@
     - item.name is defined
 
 - name: Start networks
-  virt_net:
+  community.libvirt.virt_net:
     state: active
     name: "{{ item.name }}"
     uri: "{{ virt_infra_host_libvirt_url }}"
@@ -27,7 +27,7 @@
     - item.name is defined
 
 - name: Autostart networks
-  virt_net:
+  community.libvirt.virt_net:
     autostart: yes
     name: "{{ item.name }}"
     uri: "{{ virt_infra_host_libvirt_url }}"

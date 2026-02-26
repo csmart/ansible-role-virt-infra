@@ -5,7 +5,7 @@
 # So let's just check they're all gone
 # Only remove disks if the guest is not running and it's set to undefined
 - name: Remove guest disks
-  file:
+  ansible.builtin.file:
     path: "{{ hostvars[kvmhost].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-{{ item.name }}.qcow2"
     state: absent
   become: true
@@ -18,7 +18,7 @@
   with_items: "{{ virt_infra_disks }}"
 
 - name: Remove guest cloud-init ISO
-  file:
+  ansible.builtin.file:
     path: "{{ hostvars[kvmhost].virt_infra_host_image_path | default(virt_infra_host_image_path) }}/{{ inventory_hostname }}-cloudinit.iso"
     state: absent
   become: true

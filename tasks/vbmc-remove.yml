@@ -1,6 +1,6 @@
 ---
 - name: Remove virtual BMC
-  shell: "set -o pipefail && {{ hostvars[kvmhost].result_vbmc_path.stdout }} delete {{ inventory_hostname }}"
+  ansible.builtin.shell: "set -o pipefail && {{ hostvars[kvmhost].result_vbmc_path.stdout }} delete {{ inventory_hostname }}"
   args:
     executable: /bin/bash
   become: true

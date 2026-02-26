@@ -1,6 +1,6 @@
 ---
 - name: Undefine VM
-  command: >
+  ansible.builtin.command: >
     virsh --connect {{ hostvars[kvmhost].virt_infra_host_libvirt_url | default(virt_infra_host_libvirt_url) }}
     undefine {{ inventory_hostname }}
     --managed-save

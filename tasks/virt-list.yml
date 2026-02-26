@@ -3,7 +3,7 @@
 # If result_all_vms already defined, then move the variable.
 # This way we can get the latest and previous list of VMs
 - name: Move list of all VMs to old list
-  set_fact:
+  ansible.builtin.set_fact:
     result_all_vms_before: "{{ result_all_vms }}"
   when:
     - inventory_hostname in groups['kvmhost']
@@ -11,7 +11,7 @@
   changed_when: false
 
 - name: Move list of running VMs to old list
-  set_fact:
+  ansible.builtin.set_fact:
     result_running_vms_before: "{{ result_running_vms }}"
   when:
     - inventory_hostname in groups['kvmhost']
@@ -19,7 +19,7 @@
   changed_when: false
 
 - name: Get list of all VMs
-  virt:
+  community.libvirt.virt:
     command: list_vms
     uri: "{{ virt_infra_host_libvirt_url | default(virt_infra_host_libvirt_url) }}"
   register: result_all_vms
@@ -28,7 +28,7 @@
     - inventory_hostname in groups['kvmhost']
 
 - name: Get list of running VMs
-  virt:
+  community.libvirt.virt:
     command: list_vms
     state: running
     uri: "{{ virt_infra_host_libvirt_url | default(virt_infra_host_libvirt_url) }}"
@@ -38,7 +38,7 @@
     - inventory_hostname in groups['kvmhost']
 
 - name: Get info on all VMs
-  virt:
+  community.libvirt.virt:
     command: info
     uri: "{{ virt_infra_host_libvirt_url | default(virt_infra_host_libvirt_url) }}"
   register: result_info_vms

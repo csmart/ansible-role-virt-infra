@@ -1,7 +1,7 @@
 ---
 # Define the VM, unless it doesn't yet exist and is set to "undefined"
 - name: Define VM
-  shell: >
+  ansible.builtin.shell: >
     set -o pipefail && virt-install
     --import
     --connect {{ hostvars[kvmhost].virt_infra_host_libvirt_url | default(virt_infra_host_libvirt_url) }}
@@ -48,7 +48,6 @@
     --noreboot
     --noautoconsole
     --events on_reboot=restart
-    --os-type linux
     {% if virt_infra_variant is defined and virt_infra_variant %}
     --os-variant {{ virt_infra_variant }}
     {% else %}
@@ -75,7 +74,7 @@
 
 # Set VM state, unless it doesn't yet exist and is set to "undefined"
 - name: Set state of VM
-  virt:
+  community.libvirt.virt:
     name: "{{ inventory_hostname }}"
     state: "{{ 'destroyed' if ( virt_infra_state == 'undefined' or (virt_infra_state == 'shutdown' and inventory_hostname in inventory_hostname not in hostvars[kvmhost].result_running_vms.list_vms)) else virt_infra_state }}"
     autostart: "{{ virt_infra_autostart }}"
@@ -93,7 +92,7 @@
 # Wait for network so we can get the IP to log in
 # Do this for all VMs, in case they already existed and IP has changed
 - name: Get IP address of VM
-  shell: >
+  ansible.builtin.shell: >
     set -o pipefail ;
     virsh
     --connect {{ hostvars[kvmhost].virt_infra_host_libvirt_url | default(virt_infra_host_libvirt_url) }}
@@ -121,7 +120,7 @@
     executable: /bin/bash
 
 - name: Store IP of VM
-  set_fact:
+  ansible.builtin.set_fact:
     vm_ip: "{{ result_get_ip.stdout }}"
   when:
     - inventory_hostname not in groups['kvmhost']

@@ -6,6 +6,7 @@
 - include_tasks: net-list.yml
 - include_tasks: net-remove.yml
 - include_tasks: net-create.yml
+- include_tasks: defaults-set.yml
 - include_tasks: pool-create.yml
 - include_tasks: disk-create.yml
 - include_tasks: virt-create.yml
@@ -21,7 +22,7 @@
 - include_tasks: wait.yml
 
 - name: Advise if SSH key was created
-  debug:
+  ansible.builtin.debug:
     msg: item
   with_items:
     - SSH key created at {{ result_ssh_key_gen.filename }}

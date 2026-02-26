@@ -4,7 +4,7 @@
 # however ansible doesn't seem to ensure it actually came back up
 # so perform manual stop and start
 - name: "Stop virtualbmc daemon"
-  service:
+  ansible.builtin.service:
     name: "{{ virt_infra_vbmc_service | default('vbmcd') }}"
     state: stopped
     enabled: yes
@@ -16,7 +16,7 @@
     - inventory_hostname in groups['kvmhost']
 
 - name: "Start virtualbmc daemon"
-  service:
+  ansible.builtin.service:
     name: "{{ virt_infra_vbmc_service | default('vbmcd') }}"
     state: started
     enabled: yes

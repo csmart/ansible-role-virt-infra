@@ -3,7 +3,7 @@
 # If network list already defined, then move the variable.
 # This way we can get the latest and previous list of networks
 - name: Move network details to old list
-  set_fact:
+  ansible.builtin.set_fact:
     result_libvirt_network_before: "{{ result_libvirt_network }}"
   when:
     - inventory_hostname in groups['kvmhost']
@@ -12,7 +12,7 @@
   changed_when: false
 
 - name: Move list of networks to old list
-  set_fact:
+  ansible.builtin.set_fact:
     result_libvirt_network_list_before: "{{ result_libvirt_network_list }}"
   when:
     - inventory_hostname in groups['kvmhost']
@@ -22,7 +22,7 @@
 
 # Only run on KVM host
 - name: Get network facts
-  virt_net:
+  community.libvirt.virt_net:
     command: facts
     name: "{{ item.name }}"
     uri: "{{ virt_infra_host_libvirt_url | default(virt_infra_host_libvirt_url) }}"
@@ -34,7 +34,7 @@
     - inventory_hostname in groups['kvmhost']
 
 - name: Get network list
-  virt_net:
+  community.libvirt.virt_net:
     command: list_nets
     name: dummy
     uri: "{{ virt_infra_host_libvirt_url | default(virt_infra_host_libvirt_url) }}"

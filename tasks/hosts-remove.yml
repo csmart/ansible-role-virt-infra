@@ -6,7 +6,7 @@
 # Because serial is messy and requires custom plays, I'm doing the latter
 # Thus, while this should be run against the kvmhost host, the task out show as being against one of your guests
 - name: Remove guests from /etc/hosts
-  blockinfile:
+  ansible.builtin.blockinfile:
     create: true
     state: absent
     path: /etc/hosts
@@ -21,7 +21,7 @@
 #  run_once: true
 
 - name: Remove guests from SSH known_hosts
-  blockinfile:
+  ansible.builtin.blockinfile:
     create: true
     mode: 0600
     state: absent
@@ -37,7 +37,7 @@
 #  run_once: true
 
 - name: Remove guests from SSH config
-  blockinfile:
+  ansible.builtin.blockinfile:
     create: true
     mode: 0600
     state: absent
